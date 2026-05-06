@@ -57,6 +57,8 @@ CLAUDE.md
 specops run new --name permission-model
 specops ingest-file notes/raw-discussion.md --run run-001
 specops intake run-001
+specops context run-001
+specops note run-001 --stage refine --text notes/operator-guidance.md
 specops refine run-001
 specops decisions run-001
 ```
@@ -69,6 +71,30 @@ Result:
 .specops/runs/run-001/outputs/decision_queue.md
 .specops/runs/run-001/outputs/spec_delta.json
 ```
+
+## Flow 3a: Skill-led semantic gate
+
+```text
+agent runs specops next run-001 --json
+  -> sees stage, gate kind, context command, suggested prompts
+agent runs specops context run-001
+  -> shows source summary, guidance, artifacts, decisions, patch plan if present, and next gate
+agent asks up to three open-ended questions
+agent asks whether to continue, pause, or change direction
+agent records the answer batch with specops note run-001 --stage <stage> --text <file-or-inline>
+agent refreshes specops context run-001
+agent proceeds with the next mechanical command or pauses
+```
+
+At semantic gates, the skill may author the artifact and pass it to the CLI:
+
+```sh
+specops refine run-001 --from .specops/runs/run-001/prompts/refined-answer.md
+specops harden run-001 --from .specops/runs/run-001/prompts/hardened-answer.md
+specops synthesize run-001 --from .specops/runs/run-001/prompts/spec_delta.json
+```
+
+The CLI stores these artifacts under the run and preserves their content.
 
 ## Flow 4: Accept recommendations and patch canonical docs
 

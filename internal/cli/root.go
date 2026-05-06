@@ -45,6 +45,8 @@ func NewRoot(out, err io.Writer, version string) *cobra.Command {
 		app.newUpgradeCommand(),
 		app.newConfigCommand(),
 		app.newRunCommand(),
+		app.newContextCommand(),
+		app.newNoteCommand(),
 		app.newNextCommand(),
 	}
 	setupCommands = append(setupCommands, app.newInputCommands()...)

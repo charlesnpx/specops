@@ -9,7 +9,7 @@ import (
 
 func TestPlanUsesAbsoluteStagedPaths(t *testing.T) {
 	root := t.TempDir()
-	report, err := Execute(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.0"})
+	report, err := Execute(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestPlanUsesAbsoluteStagedPaths(t *testing.T) {
 
 func TestInstallWritesInsideRootAndHashes(t *testing.T) {
 	root := t.TempDir()
-	report, err := Execute(Options{Operation: OperationInstall, Target: TargetAll, InstallRoot: root, Version: "0.1.0"})
+	report, err := Execute(Options{Operation: OperationInstall, Target: TargetAll, InstallRoot: root, Version: "0.1.1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,6 +52,31 @@ func TestInstallWritesInsideRootAndHashes(t *testing.T) {
 			if _, err := os.Stat(file.Path); err != nil {
 				t.Fatalf("installed file missing: %s: %v", file.Path, err)
 			}
+		}
+	}
+}
+
+func TestSkillPayloadAssetsMatchInstallerPayloads(t *testing.T) {
+	root := t.TempDir()
+	files, err := plannedFiles(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := map[Target]string{
+		TargetClaude: filepath.Join("..", "..", "assets", "skills", "claude", "specops", "SKILL.md"),
+		TargetCodex:  filepath.Join("..", "..", "assets", "skills", "codex", "specops", "SKILL.md"),
+	}
+	for _, file := range files {
+		source, ok := expected[file.Target]
+		if !ok {
+			continue
+		}
+		raw, err := os.ReadFile(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(file.Content) != string(raw) {
+			t.Fatalf("%s skill payload drifted from release asset", file.Target)
 		}
 	}
 }

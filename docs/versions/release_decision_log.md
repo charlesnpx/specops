@@ -24,3 +24,9 @@ Deferred:
 ```text
 MCP server, UI, direct model API default, fully autonomous loop.
 ```
+
+Accepted v0.1.1 patch direction:
+
+```text
+CLI + skill hybrid operator loop: CLI owns durable context, notes, authored artifacts, and transitions; skills own bounded conversational UX.
+```

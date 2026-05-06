@@ -17,7 +17,7 @@ last_reviewed: 2026-05-06
 {
   "schema": 1,
   "name": "specops",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "operation": "install",
   "kind": "delegated",
   "targets": {
