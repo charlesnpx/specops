@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/specops/specops/internal/artifacts"
 	"github.com/specops/specops/internal/runstate"
 	"github.com/spf13/cobra"
 )
@@ -136,4 +137,85 @@ func (a *App) newNextCommand() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func (a *App) newContextCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "context <run-id>",
+		Short: "Show compiled run context without mutating state",
+		Args:  requireArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, err := a.repoRoot()
+			if err != nil {
+				return err
+			}
+			context, err := artifacts.Context(repo, args[0])
+			if err != nil {
+				return err
+			}
+			if a.JSON {
+				return a.writeJSON(context)
+			}
+			a.humanf("run: %s\nstatus: %s\n", context.RunID, context.Status)
+			if context.SourceSummary != "" {
+				a.humanf("\nsource summary:\n%s\n", context.SourceSummary)
+			}
+			if context.NextGate != nil {
+				a.humanf("\nnext gate: %s (%s)\n%s\n%s\n", context.NextGate.Stage, context.NextGate.GateKind, context.NextGate.Command, context.NextGate.Reason)
+			}
+			if len(context.OperatorGuidance.SuggestedQuestions) > 0 {
+				a.humanf("\nsuggested questions:\n")
+				for _, question := range context.OperatorGuidance.SuggestedQuestions {
+					a.humanf("- %s\n", question)
+				}
+				a.humanf("- %s\n", context.OperatorGuidance.ControlQuestion)
+			}
+			if len(context.Artifacts) > 0 {
+				a.humanf("\nartifacts:\n")
+				for _, artifact := range context.Artifacts {
+					a.humanf("- %s\t%s\n", artifact.Type, artifact.Path)
+				}
+			}
+			if len(context.Decisions) > 0 {
+				a.humanf("\ndecisions:\n")
+				for _, decision := range context.Decisions {
+					a.humanf("- %s\t%s\t%s\n", decision.ID, decision.Status, decision.Title)
+				}
+			}
+			if context.PatchPlan != nil {
+				a.humanf("\npatch plan: %d item(s)\n", len(context.PatchPlan.Items))
+			}
+			return nil
+		},
+	}
+}
+
+func (a *App) newNoteCommand() *cobra.Command {
+	var stage string
+	var text string
+	cmd := &cobra.Command{
+		Use:   "note <run-id> --stage <stage> --text <file-or-inline>",
+		Short: "Record operator guidance for a run without advancing state",
+		Args:  requireArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, err := a.repoRoot()
+			if err != nil {
+				return err
+			}
+			result, err := artifacts.Note(repo, args[0], stage, text)
+			if err != nil {
+				return err
+			}
+			if a.JSON {
+				return a.writeJSON(result)
+			}
+			a.humanf("noted %s for %s\n", stage, result.RunID)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&stage, "stage", "", "stage this note applies to")
+	cmd.Flags().StringVar(&text, "text", "", "note text or file path")
+	_ = cmd.MarkFlagRequired("stage")
+	_ = cmd.MarkFlagRequired("text")
+	return cmd
 }

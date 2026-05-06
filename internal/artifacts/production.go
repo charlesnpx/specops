@@ -39,6 +39,10 @@ func Intake(repo, runID string) (ProductionResult, error) {
 }
 
 func Refine(repo, runID string) (ProductionResult, error) {
+	return RefineFrom(repo, runID, "")
+}
+
+func RefineFrom(repo, runID, from string) (ProductionResult, error) {
 	state, err := runstate.Load(repo, runID)
 	if err != nil {
 		return ProductionResult{}, err
@@ -46,8 +50,17 @@ func Refine(repo, runID string) (ProductionResult, error) {
 	if state.Status != runstate.StatusIntakeComplete {
 		return ProductionResult{}, fmt.Errorf("refine requires status %s, got %s", runstate.StatusIntakeComplete, state.Status)
 	}
-	intake := readRunFile(repo, state.RunID, "outputs", "intake.md")
-	content := fmt.Sprintf("# Refined Specification Notes\n\nRun: `%s`\n\n## Refined material\n\n%s\n\n## Candidate requirements\n\n- Preserve source provenance in run artifacts.\n- Present decisions explicitly before canonical mutation.\n", state.RunID, intake)
+	content := ""
+	if from != "" {
+		raw, err := os.ReadFile(from)
+		if err != nil {
+			return ProductionResult{}, err
+		}
+		content = string(raw)
+	} else {
+		intake := readRunFile(repo, state.RunID, "outputs", "intake.md")
+		content = fmt.Sprintf("# Refined Specification Notes\n\nRun: `%s`\n\n## Refined material\n\n%s\n\n## Candidate requirements\n\n- Preserve source provenance in run artifacts.\n- Present decisions explicitly before canonical mutation.\n", state.RunID, intake)
+	}
 	ref, err := writeOutput(repo, state, "refined.md", "refined", content)
 	if err != nil {
 		return ProductionResult{}, err
@@ -60,6 +73,10 @@ func Refine(repo, runID string) (ProductionResult, error) {
 }
 
 func Harden(repo, runID, backend string) (ProductionResult, error) {
+	return HardenFrom(repo, runID, backend, "")
+}
+
+func HardenFrom(repo, runID, backend, from string) (ProductionResult, error) {
 	state, err := runstate.Load(repo, runID)
 	if err != nil {
 		return ProductionResult{}, err
@@ -67,11 +84,20 @@ func Harden(repo, runID, backend string) (ProductionResult, error) {
 	if state.Status != runstate.StatusRefined {
 		return ProductionResult{}, fmt.Errorf("harden requires status %s, got %s", runstate.StatusRefined, state.Status)
 	}
-	refined := readRunFile(repo, state.RunID, "outputs", "refined.md")
 	if backend == "" {
 		backend = "manual"
 	}
-	content := fmt.Sprintf("# Hardened Notes\n\nRun: `%s`\n\nBackend: `%s`\n\n## Challenge pass\n\n%s\n\n## Risks and checks\n\n- Confirm every consequential change has an accepted decision.\n- Confirm ADRs are appended rather than rewritten.\n- Confirm interface behavior changes update interface docs.\n", state.RunID, backend, refined)
+	content := ""
+	if from != "" {
+		raw, err := os.ReadFile(from)
+		if err != nil {
+			return ProductionResult{}, err
+		}
+		content = string(raw)
+	} else {
+		refined := readRunFile(repo, state.RunID, "outputs", "refined.md")
+		content = fmt.Sprintf("# Hardened Notes\n\nRun: `%s`\n\nBackend: `%s`\n\n## Challenge pass\n\n%s\n\n## Risks and checks\n\n- Confirm every consequential change has an accepted decision.\n- Confirm ADRs are appended rather than rewritten.\n- Confirm interface behavior changes update interface docs.\n", state.RunID, backend, refined)
+	}
 	ref, err := writeOutput(repo, state, "hardened.md", "hardened", content)
 	if err != nil {
 		return ProductionResult{}, err
@@ -84,12 +110,43 @@ func Harden(repo, runID, backend string) (ProductionResult, error) {
 }
 
 func Synthesize(repo, runID string) (ProductionResult, error) {
+	return SynthesizeFrom(repo, runID, "")
+}
+
+func SynthesizeFrom(repo, runID, from string) (ProductionResult, error) {
 	state, err := runstate.Load(repo, runID)
 	if err != nil {
 		return ProductionResult{}, err
 	}
 	if state.Status != runstate.StatusHardened && state.Status != runstate.StatusRefined {
 		return ProductionResult{}, fmt.Errorf("synthesize requires status %s or %s, got %s", runstate.StatusHardened, runstate.StatusRefined, state.Status)
+	}
+	if from != "" {
+		raw, err := os.ReadFile(from)
+		if err != nil {
+			return ProductionResult{}, err
+		}
+		var delta SpecDelta
+		if err := json.Unmarshal(raw, &delta); err != nil {
+			return ProductionResult{}, err
+		}
+		if delta.RunID != "" && delta.RunID != state.RunID {
+			return ProductionResult{}, fmt.Errorf("spec delta run_id %q does not match %q", delta.RunID, state.RunID)
+		}
+		path := filepath.Join(runstate.RunDir(repo, state.RunID), "outputs", "spec_delta.json")
+		if err := os.WriteFile(path, raw, 0o644); err != nil {
+			return ProductionResult{}, err
+		}
+		ref := runstate.ArtifactRef{ID: fmt.Sprintf("spec_delta-%03d", len(state.Artifacts)+1), Type: "spec_delta", Path: "outputs/spec_delta.json", CreatedAt: time.Now().UTC().Format(time.RFC3339)}
+		state.Artifacts = append(state.Artifacts, ref)
+		for _, decision := range delta.Decisions {
+			state.Decisions[decision.ID] = decision
+		}
+		state.Status = runstate.StatusAwaitingDecisions
+		if err := runstate.Save(repo, state); err != nil {
+			return ProductionResult{}, err
+		}
+		return ProductionResult{RunID: state.RunID, Status: state.Status, Artifact: ref}, nil
 	}
 	source := readRunFile(repo, state.RunID, "outputs", "hardened.md")
 	if source == "" {

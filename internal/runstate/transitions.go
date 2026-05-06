@@ -33,30 +33,74 @@ func SetStatus(state *RunState, status Status) {
 }
 
 func NextForStatus(status Status, runID string) *NextAction {
+	contextCommand := "specops context " + runID
 	switch status {
 	case StatusCreated:
-		return &NextAction{Command: "specops ingest-file <path> --run " + runID, Reason: "run has no normalized input yet"}
+		return mechanical("ingest", "specops ingest-file <path> --run "+runID, "run has no normalized input yet", contextCommand)
 	case StatusIngested:
-		return &NextAction{Command: "specops intake " + runID, Reason: "input is ready for intake"}
+		return mechanical("intake", "specops intake "+runID, "input is ready for intake", contextCommand)
 	case StatusIntakeComplete:
-		return &NextAction{Command: "specops refine " + runID, Reason: "intake artifact is ready to refine"}
+		return semantic("refine", "specops refine "+runID, "intake artifact is ready to refine", contextCommand, []string{
+			"What should the refinement preserve from the source material?",
+			"What ambiguities or missing constraints should be called out before synthesis?",
+			"What would make the next artifact useful for review?",
+		})
 	case StatusRefined:
-		return &NextAction{Command: "specops harden " + runID, Reason: "refined artifact can be challenged or synthesized"}
+		return semantic("harden", "specops harden "+runID, "refined artifact can be challenged or synthesized", contextCommand, []string{
+			"What assumptions in the refined notes need pressure-testing?",
+			"What failure modes or interface consequences should the hardening pass examine?",
+			"Is the refined artifact ready to synthesize, or should it be challenged first?",
+		})
 	case StatusHardened:
-		return &NextAction{Command: "specops synthesize " + runID, Reason: "hardened artifact can produce a spec delta"}
+		return semantic("synthesize", "specops synthesize "+runID, "hardened artifact can produce a spec delta", contextCommand, []string{
+			"What decisions should be explicit before canonical docs can change?",
+			"Which docs are likely affected by the synthesized delta?",
+			"What acceptance criteria should gate the patch plan?",
+		})
 	case StatusAwaitingDecisions:
-		return &NextAction{Command: "specops decisions " + runID, Reason: "human decision gate is waiting"}
+		return semantic("decisions", "specops decisions "+runID, "human decision gate is waiting", contextCommand, []string{
+			"Which proposed decisions should be accepted, rejected, deferred, or amended?",
+			"Does any decision require a new or superseding ADR?",
+			"What rationale should be recorded with any deferrals or amendments?",
+		})
 	case StatusDecisionsAccepted:
-		return &NextAction{Command: "specops compile " + runID + " --accepted-only", Reason: "accepted decisions can be compiled"}
+		return mechanical("compile", "specops compile "+runID+" --accepted-only", "accepted decisions can be compiled", contextCommand)
 	case StatusCompiled:
-		return &NextAction{Command: "specops plan " + runID, Reason: "patch plan is ready for review"}
+		return mechanical("plan", "specops plan "+runID, "patch plan is ready for review", contextCommand)
 	case StatusPlanned:
-		return &NextAction{Command: "specops apply " + runID, Reason: "reviewed plan can be applied"}
+		return semantic("apply", "specops apply "+runID, "reviewed plan can be applied", contextCommand, []string{
+			"Has the compiled patch plan been reviewed against the accepted decisions?",
+			"Should apply run as a dry run, interactive apply, or direct apply?",
+			"Are there local files that need checking before mutation?",
+		})
 	case StatusApplied:
-		return &NextAction{Command: "specops audit", Reason: "applied changes should be audited"}
+		return mechanical("audit", "specops audit", "applied changes should be audited", contextCommand)
 	case StatusAudited:
-		return &NextAction{Command: "specops eval --gold <repo> --candidate <repo>", Reason: "audited repo can be evaluated"}
+		return mechanical("eval", "specops eval --gold <repo> --candidate <repo>", "audited repo can be evaluated", contextCommand)
 	default:
 		return nil
+	}
+}
+
+func mechanical(stage, command, reason, contextCommand string) *NextAction {
+	return &NextAction{
+		Command:               command,
+		Reason:                reason,
+		Stage:                 stage,
+		GateKind:              "mechanical",
+		ContextCommand:        contextCommand,
+		HumanInputRecommended: false,
+	}
+}
+
+func semantic(stage, command, reason, contextCommand string, questions []string) *NextAction {
+	return &NextAction{
+		Command:               command,
+		Reason:                reason,
+		Stage:                 stage,
+		GateKind:              "semantic",
+		ContextCommand:        contextCommand,
+		SuggestedQuestions:    questions,
+		HumanInputRecommended: true,
 	}
 }

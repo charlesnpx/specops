@@ -60,6 +60,11 @@ type Decision struct {
 }
 
 type NextAction struct {
-	Command string `json:"command"`
-	Reason  string `json:"reason"`
+	Command               string   `json:"command"`
+	Reason                string   `json:"reason"`
+	Stage                 string   `json:"stage,omitempty"`
+	GateKind              string   `json:"gate_kind,omitempty"`
+	ContextCommand        string   `json:"context_command,omitempty"`
+	SuggestedQuestions    []string `json:"suggested_question_prompts,omitempty"`
+	HumanInputRecommended bool     `json:"human_input_recommended,omitempty"`
 }

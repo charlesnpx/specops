@@ -49,6 +49,21 @@ Required behavior:
 - Write draft artifacts before canonical patches.
 - Run audits after applying patches.
 
+## Operator loop requirements
+
+Claude and Codex payloads must define the skill-led interactive operator loop:
+
+- The CLI owns durable run state, compiled context, prompt artifacts, authored semantic artifacts, and safe command transitions.
+- The skill owns conversational UX.
+- Agents inspect `specops context <run-id>` before semantic work.
+- Agents run mechanical steps when `specops next <run-id> --json` reports one safe path.
+- Agents pause at semantic gates: `refine`, `harden`, `synthesize`, `decisions`, and `apply`.
+- Agents ask at most three open-ended questions in one batch, plus one control question asking whether to continue, pause, or change direction.
+- After an answer batch, agents record guidance with `specops note <run-id> --stage <stage> --text <file-or-inline>`, refresh `specops context <run-id>`, and then proceed or pause.
+- Agents use `--from <file>` when they or the operator authored the `refine`, `harden`, or `synthesize` artifact.
+
+The payload source used by the installer and release assets must remain equivalent; installer tests should fail if payloads drift.
+
 ## Payload versioning
 
 Payloads should include:

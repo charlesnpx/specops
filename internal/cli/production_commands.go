@@ -39,7 +39,8 @@ func (a *App) newIntakeCommand() *cobra.Command {
 }
 
 func (a *App) newRefineCommand() *cobra.Command {
-	return &cobra.Command{
+	var from string
+	cmd := &cobra.Command{
 		Use:   "refine <run-id>",
 		Short: "Refine an intake artifact",
 		Args:  requireArgs(1),
@@ -48,7 +49,7 @@ func (a *App) newRefineCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := artifacts.Refine(repo, args[0])
+			result, err := artifacts.RefineFrom(repo, args[0], from)
 			if err != nil {
 				return err
 			}
@@ -59,10 +60,13 @@ func (a *App) newRefineCommand() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&from, "from", "", "agent or human-authored refined artifact")
+	return cmd
 }
 
 func (a *App) newHardenCommand() *cobra.Command {
 	var backend string
+	var from string
 	cmd := &cobra.Command{
 		Use:   "harden <run-id> [--backend convo-relay]",
 		Short: "Challenge and harden refined notes",
@@ -75,7 +79,7 @@ func (a *App) newHardenCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := artifacts.Harden(repo, args[0], backend)
+			result, err := artifacts.HardenFrom(repo, args[0], backend, from)
 			if err != nil {
 				return err
 			}
@@ -87,11 +91,13 @@ func (a *App) newHardenCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&backend, "backend", "", "backend used for hardening")
+	cmd.Flags().StringVar(&from, "from", "", "agent or human-authored hardened artifact")
 	return cmd
 }
 
 func (a *App) newSynthesizeCommand() *cobra.Command {
-	return &cobra.Command{
+	var from string
+	cmd := &cobra.Command{
 		Use:   "synthesize <run-id>",
 		Short: "Synthesize a typed spec delta",
 		Args:  requireArgs(1),
@@ -100,7 +106,7 @@ func (a *App) newSynthesizeCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := artifacts.Synthesize(repo, args[0])
+			result, err := artifacts.SynthesizeFrom(repo, args[0], from)
 			if err != nil {
 				return err
 			}
@@ -111,6 +117,8 @@ func (a *App) newSynthesizeCommand() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&from, "from", "", "agent or human-authored spec_delta.json")
+	return cmd
 }
 
 func (a *App) newDeepenCommand() *cobra.Command {

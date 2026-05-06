@@ -18,7 +18,7 @@ SpecOps itself should avoid duplicating `mise-en-place` ownership state for inst
 ```yaml
 schema: 1
 scaffold:
-  version: 0.1.0
+  version: 0.1.1
   files:
     - path: .specops/process.md
       sha256: ...
