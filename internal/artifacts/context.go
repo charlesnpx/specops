@@ -26,6 +26,7 @@ type RunContext struct {
 
 type OperatorGuidance struct {
 	ContextCommand        string   `json:"context_command,omitempty"`
+	NoteCommand           string   `json:"note_command,omitempty"`
 	GateKind              string   `json:"gate_kind,omitempty"`
 	Stage                 string   `json:"stage,omitempty"`
 	HumanInputRecommended bool     `json:"human_input_recommended"`
@@ -51,6 +52,7 @@ func Context(repo, runID string) (RunContext, error) {
 	guidance := OperatorGuidance{ControlQuestion: "Should the operator continue, pause, or change direction?"}
 	if state.Next != nil {
 		guidance.ContextCommand = state.Next.ContextCommand
+		guidance.NoteCommand = state.Next.NoteCommand
 		guidance.GateKind = state.Next.GateKind
 		guidance.Stage = state.Next.Stage
 		guidance.HumanInputRecommended = state.Next.HumanInputRecommended
@@ -92,7 +94,7 @@ func Note(repo, runID, stage, text string) (NoteResult, error) {
 	}
 	name := fmt.Sprintf("%s-%s.md", now.Format("20060102-150405"), slug)
 	body := fmt.Sprintf("# Operator Note\n\nRun: `%s`\nStage: `%s`\nRecorded: `%s`\n\n%s\n", state.RunID, stage, now.Format(time.RFC3339), strings.TrimSpace(content))
-	ref, err := writePrompt(repo, state, name, body)
+	ref, err := writePrompt(repo, state, name, slug, body)
 	if err != nil {
 		return NoteResult{}, err
 	}
@@ -102,7 +104,31 @@ func Note(repo, runID, stage, text string) (NoteResult, error) {
 	return NoteResult{RunID: state.RunID, Status: state.Status, Artifact: ref}, nil
 }
 
-func writePrompt(repo string, state *runstate.RunState, filename, content string) (runstate.ArtifactRef, error) {
+func hasStageNote(state *runstate.RunState, stage string) bool {
+	want := safeName(stage)
+	if want == "" {
+		return false
+	}
+	for _, artifact := range state.Artifacts {
+		if artifact.Type != "prompt" {
+			continue
+		}
+		if safeName(artifact.Stage) == want {
+			return true
+		}
+		if artifact.Stage == "" && legacyPromptPathMatchesStage(artifact.Path, want) {
+			return true
+		}
+	}
+	return false
+}
+
+func legacyPromptPathMatchesStage(path, stage string) bool {
+	path = filepath.ToSlash(path)
+	return strings.HasPrefix(path, "prompts/") && strings.HasSuffix(path, "-"+stage+".md")
+}
+
+func writePrompt(repo string, state *runstate.RunState, filename, stage, content string) (runstate.ArtifactRef, error) {
 	path := filepath.Join(runstate.RunDir(repo, state.RunID), "prompts", filename)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return runstate.ArtifactRef{}, err
@@ -110,7 +136,7 @@ func writePrompt(repo string, state *runstate.RunState, filename, content string
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return runstate.ArtifactRef{}, err
 	}
-	ref := runstate.ArtifactRef{ID: fmt.Sprintf("prompt-%03d", len(state.Artifacts)+1), Type: "prompt", Path: "prompts/" + filename, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
+	ref := runstate.ArtifactRef{ID: fmt.Sprintf("prompt-%03d", len(state.Artifacts)+1), Type: "prompt", Path: "prompts/" + filename, Stage: stage, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
 	state.Artifacts = append(state.Artifacts, ref)
 	return ref, nil
 }

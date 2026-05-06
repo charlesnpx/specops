@@ -8,7 +8,7 @@ import (
 
 func BuildReport(opts Options) (Report, error) {
 	if opts.Version == "" {
-		opts.Version = "0.1.1"
+		opts.Version = "0.1.2"
 	}
 	files, err := plannedFiles(opts)
 	if err != nil {

@@ -57,10 +57,16 @@ Claude and Codex payloads must define the skill-led interactive operator loop:
 - The skill owns conversational UX.
 - Agents inspect `specops context <run-id>` before semantic work.
 - Agents run mechanical steps when `specops next <run-id> --json` reports one safe path.
-- Agents pause at semantic gates: `refine`, `harden`, `synthesize`, `decisions`, and `apply`.
-- Agents ask at most three open-ended questions in one batch, plus one control question asking whether to continue, pause, or change direction.
-- After an answer batch, agents record guidance with `specops note <run-id> --stage <stage> --text <file-or-inline>`, refresh `specops context <run-id>`, and then proceed or pause.
+- Agents MUST stop at semantic gates: `refine`, `harden`, `synthesize`, `decisions`, and `apply`.
+- Agents treat `suggested_question_prompts` as generic scaffolding. The CLI remains non-AI and does not generate content-aware questions.
+- Agents read the run artifacts and ask at most three content-aware open-ended questions in one batch, plus one control question asking whether to continue, pause, or change direction.
+- A user answer of `continue` applies only to the current semantic gate and is never permission to cross multiple semantic gates.
+- After an answer batch, agents record guidance with `specops note <run-id> --stage <stage> --text <file-or-inline>`.
+- Agents run at most the one semantic command for the current stage, then refresh `specops context <run-id>` before running anything else.
+- If refreshed context reports another semantic gate, agents MUST stop and ask that gate's questions before running any command.
 - Agents use `--from <file>` when they or the operator authored the `refine`, `harden`, or `synthesize` artifact.
+
+The payload must explain that `specops refine`, `specops harden`, and `specops synthesize` require a matching recorded stage note before either fallback or `--from` mode can run.
 
 The payload source used by the installer and release assets must remain equivalent; installer tests should fail if payloads drift.
 

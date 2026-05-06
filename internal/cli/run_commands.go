@@ -134,6 +134,9 @@ func (a *App) newNextCommand() *cobra.Command {
 				return nil
 			}
 			a.humanf("%s\n%s\n", next.Command, next.Reason)
+			if next.GateKind == "semantic" && next.NoteCommand != "" {
+				a.humanf("semantic commands require a stage note before execution\n%s\n", next.NoteCommand)
+			}
 			return nil
 		},
 	}
@@ -162,6 +165,9 @@ func (a *App) newContextCommand() *cobra.Command {
 			}
 			if context.NextGate != nil {
 				a.humanf("\nnext gate: %s (%s)\n%s\n%s\n", context.NextGate.Stage, context.NextGate.GateKind, context.NextGate.Command, context.NextGate.Reason)
+				if context.NextGate.GateKind == "semantic" && context.NextGate.NoteCommand != "" {
+					a.humanf("semantic commands require a stage note before execution\nnote command: %s\n", context.NextGate.NoteCommand)
+				}
 			}
 			if len(context.OperatorGuidance.SuggestedQuestions) > 0 {
 				a.humanf("\nsuggested questions:\n")

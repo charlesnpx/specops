@@ -9,7 +9,7 @@ import (
 
 func TestPlanUsesAbsoluteStagedPaths(t *testing.T) {
 	root := t.TempDir()
-	report, err := Execute(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.1"})
+	report, err := Execute(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.2"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestPlanUsesAbsoluteStagedPaths(t *testing.T) {
 
 func TestInstallWritesInsideRootAndHashes(t *testing.T) {
 	root := t.TempDir()
-	report, err := Execute(Options{Operation: OperationInstall, Target: TargetAll, InstallRoot: root, Version: "0.1.1"})
+	report, err := Execute(Options{Operation: OperationInstall, Target: TargetAll, InstallRoot: root, Version: "0.1.2"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestInstallWritesInsideRootAndHashes(t *testing.T) {
 
 func TestSkillPayloadAssetsMatchInstallerPayloads(t *testing.T) {
 	root := t.TempDir()
-	files, err := plannedFiles(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.1"})
+	files, err := plannedFiles(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.2"})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -38,8 +38,17 @@ func TestContextForRunStages(t *testing.T) {
 	if !context.OperatorGuidance.HumanInputRecommended || context.OperatorGuidance.Stage != "refine" {
 		t.Fatalf("unexpected guidance: %+v", context.OperatorGuidance)
 	}
+	if context.NextGate.NoteCommand == "" || context.OperatorGuidance.NoteCommand == "" {
+		t.Fatalf("semantic gate should expose note command: %+v / %+v", context.NextGate, context.OperatorGuidance)
+	}
 
+	if _, err := Note(repo, state.RunID, "refine", "refine this into reviewable notes"); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := Refine(repo, state.RunID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Note(repo, state.RunID, "synthesize", "prepare explicit decisions"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Synthesize(repo, state.RunID); err != nil {
@@ -85,6 +94,9 @@ func TestNoteCreatesPromptArtifactWithoutChangingStatus(t *testing.T) {
 	if result.Artifact.Type != "prompt" || !strings.HasPrefix(result.Artifact.Path, "prompts/") {
 		t.Fatalf("unexpected artifact: %+v", result.Artifact)
 	}
+	if result.Artifact.Stage != "refine" {
+		t.Fatalf("artifact stage = %q, want refine", result.Artifact.Stage)
+	}
 	if _, err := os.Stat(filepath.Join(runstate.RunDir(repo, state.RunID), result.Artifact.Path)); err != nil {
 		t.Fatal(err)
 	}
@@ -107,6 +119,9 @@ func TestFromArtifactsArePreservedAndTransitionsEnforced(t *testing.T) {
 	if err := os.WriteFile(refinedPath, []byte(refined), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := Note(repo, state.RunID, "refine", "use the authored refined artifact"); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := RefineFrom(repo, state.RunID, refinedPath); err != nil {
 		t.Fatal(err)
 	}
@@ -120,6 +135,9 @@ func TestFromArtifactsArePreservedAndTransitionsEnforced(t *testing.T) {
 	hardenedPath := filepath.Join(repo, "hardened.md")
 	hardened := "# Authored hardened notes\n\nExact challenge pass.\n"
 	if err := os.WriteFile(hardenedPath, []byte(hardened), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Note(repo, state.RunID, "harden", "use the authored hardening artifact"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := HardenFrom(repo, state.RunID, "manual", hardenedPath); err != nil {
@@ -150,6 +168,9 @@ func TestFromArtifactsArePreservedAndTransitionsEnforced(t *testing.T) {
 	if err := os.WriteFile(deltaPath, append(raw, '\n'), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := Note(repo, state.RunID, "synthesize", "use the authored spec delta"); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := SynthesizeFrom(repo, state.RunID, deltaPath); err != nil {
 		t.Fatal(err)
 	}
@@ -162,6 +183,100 @@ func TestFromArtifactsArePreservedAndTransitionsEnforced(t *testing.T) {
 	}
 	if _, ok := loaded.Decisions["DEC-9001"]; !ok {
 		t.Fatal("expected decision from authored delta")
+	}
+}
+
+func TestSemanticProductionRequiresStageNotes(t *testing.T) {
+	repo, state := newIngestedRun(t)
+	if _, err := Intake(repo, state.RunID); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Refine(repo, state.RunID); err == nil || !strings.Contains(err.Error(), "specops note "+state.RunID+" --stage refine") {
+		t.Fatalf("expected refine stage-note error, got %v", err)
+	}
+	if _, err := Note(repo, state.RunID, "refine", "operator guidance for refine"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Refine(repo, state.RunID); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Harden(repo, state.RunID, "manual"); err == nil || !strings.Contains(err.Error(), "specops note "+state.RunID+" --stage harden") {
+		t.Fatalf("expected harden stage-note error, got %v", err)
+	}
+	if _, err := Note(repo, state.RunID, "harden", "operator guidance for harden"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Harden(repo, state.RunID, "manual"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Synthesize(repo, state.RunID); err == nil || !strings.Contains(err.Error(), "specops note "+state.RunID+" --stage synthesize") {
+		t.Fatalf("expected synthesize stage-note error, got %v", err)
+	}
+	if _, err := Note(repo, state.RunID, "synthesize", "operator guidance for synthesize"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Synthesize(repo, state.RunID); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSemanticProductionRequiresStageNotesWithFromArtifacts(t *testing.T) {
+	repo, state := newIngestedRun(t)
+	if _, err := Intake(repo, state.RunID); err != nil {
+		t.Fatal(err)
+	}
+	refinedPath := filepath.Join(repo, "refined.md")
+	if err := os.WriteFile(refinedPath, []byte("# Authored refined notes\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := RefineFrom(repo, state.RunID, refinedPath); err == nil || !strings.Contains(err.Error(), "specops note "+state.RunID+" --stage refine") {
+		t.Fatalf("expected refine --from stage-note error, got %v", err)
+	}
+}
+
+func TestLegacyPromptPathSatisfiesStageNote(t *testing.T) {
+	repo, state := newIngestedRun(t)
+	if _, err := Intake(repo, state.RunID); err != nil {
+		t.Fatal(err)
+	}
+	addLegacyPromptArtifact(t, repo, state.RunID, "refine")
+	if _, err := Refine(repo, state.RunID); err != nil {
+		t.Fatal(err)
+	}
+
+	addLegacyPromptArtifact(t, repo, state.RunID, "harden")
+	if _, err := Harden(repo, state.RunID, "manual"); err != nil {
+		t.Fatal(err)
+	}
+
+	addLegacyPromptArtifact(t, repo, state.RunID, "synthesize")
+	if _, err := Synthesize(repo, state.RunID); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func addLegacyPromptArtifact(t *testing.T, repo, runID, stage string) {
+	t.Helper()
+	state, err := runstate.Load(repo, runID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	filename := "20260506-120000-" + stage + ".md"
+	path := filepath.Join(runstate.RunDir(repo, state.RunID), "prompts", filename)
+	if err := os.WriteFile(path, []byte("# Legacy note\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	state.Artifacts = append(state.Artifacts, runstate.ArtifactRef{
+		ID:        "prompt-legacy-" + stage,
+		Type:      "prompt",
+		Path:      "prompts/" + filename,
+		CreatedAt: "2026-05-06T12:00:00Z",
+	})
+	if err := runstate.Save(repo, state); err != nil {
+		t.Fatal(err)
 	}
 }
 

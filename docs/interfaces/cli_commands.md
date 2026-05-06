@@ -65,7 +65,9 @@ specops deepen <run-id> --target <concept-or-doc>
 - patch plan when present
 - next gate metadata
 
-`specops note <run-id> --stage <stage> --text <file-or-inline>` records operator or agent guidance under `.specops/runs/<run-id>/prompts/` and adds a `prompt` artifact to run state. It must not advance run status.
+`specops note <run-id> --stage <stage> --text <file-or-inline>` records operator or agent guidance under `.specops/runs/<run-id>/prompts/` and adds a `prompt` artifact to run state. The prompt artifact records `stage` metadata so semantic gates can verify that guidance was captured for the current stage. It must not advance run status.
+
+For compatibility with v0.1.1 run state, a prompt artifact without `stage` metadata also satisfies the matching stage when its path has the legacy shape `prompts/<timestamp>-<stage>.md`.
 
 ## `next --json`
 
@@ -81,6 +83,7 @@ specops deepen <run-id> --target <concept-or-doc>
     "stage": "refine",
     "gate_kind": "semantic",
     "context_command": "specops context run-...",
+    "note_command": "specops note run-... --stage refine --text <file-or-inline>",
     "suggested_question_prompts": [],
     "human_input_recommended": true
   }
@@ -89,9 +92,26 @@ specops deepen <run-id> --target <concept-or-doc>
 
 `gate_kind` is `mechanical` when the next step has one safe deterministic path, and `semantic` when the operator loop should pause for bounded human guidance.
 
+For semantic gates, `note_command` gives the command shape for recording the current gate's operator or agent guidance. Human `context` and `next` output must state that semantic production commands require a stage note before execution.
+
 ## Authored semantic artifacts
 
 `refine --from`, `harden --from`, and `synthesize --from` let an agent or human produce the semantic artifact outside the deterministic fallback. The CLI copies the supplied artifact into the run output without rewriting the content, then applies the same legal state transition as the fallback command. `synthesize --from` must receive a parseable `spec_delta.json`; its decisions are loaded into run state.
+
+`specops refine`, `specops harden`, and `specops synthesize` are semantic production commands. Before running either deterministic fallback or `--from` mode, each command must find a recorded stage note for its own stage:
+
+```sh
+specops note <run-id> --stage refine --text <file-or-inline>
+specops note <run-id> --stage harden --text <file-or-inline>
+specops note <run-id> --stage synthesize --text <file-or-inline>
+```
+
+If the matching stage note is missing, the command must fail without writing an output artifact or advancing run status. The error must show both:
+
+```sh
+specops context <run-id>
+specops note <run-id> --stage <stage> --text <file-or-inline>
+```
 
 ## Decisions
 

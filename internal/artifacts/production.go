@@ -50,6 +50,9 @@ func RefineFrom(repo, runID, from string) (ProductionResult, error) {
 	if state.Status != runstate.StatusIntakeComplete {
 		return ProductionResult{}, fmt.Errorf("refine requires status %s, got %s", runstate.StatusIntakeComplete, state.Status)
 	}
+	if err := requireStageNote(state, "refine"); err != nil {
+		return ProductionResult{}, err
+	}
 	content := ""
 	if from != "" {
 		raw, err := os.ReadFile(from)
@@ -83,6 +86,9 @@ func HardenFrom(repo, runID, backend, from string) (ProductionResult, error) {
 	}
 	if state.Status != runstate.StatusRefined {
 		return ProductionResult{}, fmt.Errorf("harden requires status %s, got %s", runstate.StatusRefined, state.Status)
+	}
+	if err := requireStageNote(state, "harden"); err != nil {
+		return ProductionResult{}, err
 	}
 	if backend == "" {
 		backend = "manual"
@@ -120,6 +126,9 @@ func SynthesizeFrom(repo, runID, from string) (ProductionResult, error) {
 	}
 	if state.Status != runstate.StatusHardened && state.Status != runstate.StatusRefined {
 		return ProductionResult{}, fmt.Errorf("synthesize requires status %s or %s, got %s", runstate.StatusHardened, runstate.StatusRefined, state.Status)
+	}
+	if err := requireStageNote(state, "synthesize"); err != nil {
+		return ProductionResult{}, err
 	}
 	if from != "" {
 		raw, err := os.ReadFile(from)
@@ -188,6 +197,13 @@ func SynthesizeFrom(repo, runID, from string) (ProductionResult, error) {
 		return ProductionResult{}, err
 	}
 	return ProductionResult{RunID: state.RunID, Status: state.Status, Artifact: ref}, nil
+}
+
+func requireStageNote(state *runstate.RunState, stage string) error {
+	if hasStageNote(state, stage) {
+		return nil
+	}
+	return fmt.Errorf("semantic gate %q requires a recorded stage note before execution\nrefresh context: specops context %s\nrecord note: specops note %s --stage %s --text <file-or-inline>", stage, state.RunID, state.RunID, stage)
 }
 
 func Deepen(repo, runID, target string) (ProductionResult, error) {

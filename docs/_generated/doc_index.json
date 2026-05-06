@@ -57,6 +57,8 @@
   "docs/decisions/ADR-0010-relay-as-hardening-backend.md",
   "docs/decisions/ADR-0011-xdg-state-cache.md",
   "docs/decisions/ADR-0012-no-autonomous-mutation.md",
+  "docs/decisions/ADR-0013-skill-led-interactive-operator-loop.md",
+  "docs/decisions/ADR-0014-enforce-semantic-gate-notes.md",
   "docs/decisions/README.md",
   "docs/implementation/README.md",
   "docs/implementation/implementation_strategy.md",

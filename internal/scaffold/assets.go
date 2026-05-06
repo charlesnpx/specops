@@ -2,7 +2,7 @@ package scaffold
 
 import "fmt"
 
-const Version = "0.1.1"
+const Version = "0.1.2"
 
 func files(mode, agent string) map[string]string {
 	return map[string]string{
@@ -66,6 +66,7 @@ Rules:
 - Do not patch canonical docs before decisions are accepted.
 - Keep run artifacts under .specops/runs/.
 - Promote reviewed provenance to docs/research/refinery/.
+- Record a stage note before semantic commands: refine, harden, and synthesize.
 - Use ADRs for consequential accepted decisions.
 - Update interfaces when behavior changes.
 `
@@ -154,7 +155,33 @@ const runStateSchema = `{
   "properties": {
     "schema": {"const": 1},
     "run_id": {"type": "string"},
-    "status": {"type": "string"}
+    "status": {"type": "string"},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "path": {"type": "string"},
+          "stage": {"type": "string"},
+          "created_at": {"type": "string"}
+        }
+      }
+    },
+    "next": {
+      "type": "object",
+      "properties": {
+        "command": {"type": "string"},
+        "reason": {"type": "string"},
+        "stage": {"type": "string"},
+        "gate_kind": {"type": "string"},
+        "context_command": {"type": "string"},
+        "note_command": {"type": "string"},
+        "suggested_question_prompts": {"type": "array", "items": {"type": "string"}},
+        "human_input_recommended": {"type": "boolean"}
+      }
+    }
   }
 }
 `

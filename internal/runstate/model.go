@@ -44,6 +44,7 @@ type ArtifactRef struct {
 	ID        string `json:"id"`
 	Type      string `json:"type"`
 	Path      string `json:"path"`
+	Stage     string `json:"stage,omitempty"`
 	CreatedAt string `json:"created_at"`
 }
 
@@ -65,6 +66,7 @@ type NextAction struct {
 	Stage                 string   `json:"stage,omitempty"`
 	GateKind              string   `json:"gate_kind,omitempty"`
 	ContextCommand        string   `json:"context_command,omitempty"`
+	NoteCommand           string   `json:"note_command,omitempty"`
 	SuggestedQuestions    []string `json:"suggested_question_prompts,omitempty"`
 	HumanInputRecommended bool     `json:"human_input_recommended,omitempty"`
 }

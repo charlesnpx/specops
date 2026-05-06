@@ -41,7 +41,7 @@ SpecOps must be installable as a delegated repo managed by `mise-en-place`.
 {
   "schema": 1,
   "name": "specops",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "operation": "install",
   "kind": "delegated",
   "targets": {

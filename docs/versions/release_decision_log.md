@@ -30,3 +30,9 @@ Accepted v0.1.1 patch direction:
 ```text
 CLI + skill hybrid operator loop: CLI owns durable context, notes, authored artifacts, and transitions; skills own bounded conversational UX.
 ```
+
+Accepted v0.1.2 patch direction:
+
+```text
+Semantic production gates are enforced by recorded stage notes; "continue" is scoped to one current gate, and agents must refresh context after every semantic command.
+```

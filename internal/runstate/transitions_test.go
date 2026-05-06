@@ -16,6 +16,9 @@ func TestNextForStatusPreservesCommandReasonAndAddsGateMetadata(t *testing.T) {
 	if next.ContextCommand != "specops context run-001" {
 		t.Fatalf("context command = %q", next.ContextCommand)
 	}
+	if next.NoteCommand != "specops note run-001 --stage refine --text <file-or-inline>" {
+		t.Fatalf("note command = %q", next.NoteCommand)
+	}
 	if !next.HumanInputRecommended || len(next.SuggestedQuestions) != 3 {
 		t.Fatalf("unexpected operator guidance: %+v", next)
 	}
