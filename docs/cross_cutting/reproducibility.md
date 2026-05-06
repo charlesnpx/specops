@@ -17,8 +17,8 @@ last_reviewed: 2026-05-06
 
 ```yaml
 schema: 1
-specops_version: 0.1.1
-scaffold_version: 0.1.1
+specops_version: 0.1.2
+scaffold_version: 0.1.2
 templates_hash: sha256:...
 schemas_hash: sha256:...
 evals_hash: sha256:...

@@ -20,6 +20,7 @@ last_reviewed: 2026-05-06
     normalized/
   prompts/
     prompt_packet.json
+    <timestamp>-<stage>.md
   outputs/
     input_summary.md
     refinery_note.md
@@ -37,3 +38,5 @@ last_reviewed: 2026-05-06
 ```
 
 No file in `outputs/` is canonical until applied or promoted.
+
+Prompt Markdown files created by `specops note` are durable gate guidance. The run state artifact entry records the prompt `stage`; legacy prompt paths with `<timestamp>-<stage>.md` remain stage-checkable when metadata is absent.

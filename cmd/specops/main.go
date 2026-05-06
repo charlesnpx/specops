@@ -8,7 +8,7 @@ import (
 	"github.com/specops/specops/internal/output"
 )
 
-var version = "0.1.1"
+var version = "0.1.2"
 
 func main() {
 	root := cli.NewRoot(os.Stdout, os.Stderr, version)

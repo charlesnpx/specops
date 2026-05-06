@@ -31,13 +31,68 @@
       "type": "array"
     },
     "artifacts": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "path",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        }
+      }
     },
     "decisions": {
       "type": "object"
     },
     "next": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "stage": {
+          "type": "string"
+        },
+        "gate_kind": {
+          "type": "string"
+        },
+        "context_command": {
+          "type": "string"
+        },
+        "note_command": {
+          "type": "string"
+        },
+        "suggested_question_prompts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "human_input_recommended": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

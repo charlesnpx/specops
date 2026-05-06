@@ -38,12 +38,12 @@ LICENSE
 ## Release process
 
 ```text
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.2
+git push origin v0.1.2
 GitHub Actions runs tests
 GoReleaser builds archives and checksums
 GitHub Release publishes assets
-mise-en-place latest-release can resolve v0.1.1
+mise-en-place latest-release can resolve v0.1.2
 ```
 
 ## Checksums
