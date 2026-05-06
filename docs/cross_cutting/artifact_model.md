@@ -1,0 +1,54 @@
+---
+id: artifact-model
+title: Artifact Model
+doc_type: cross_cutting_spec
+status: accepted
+normative: true
+version_scope: v0_required
+last_reviewed: 2026-05-06
+---
+
+
+# Artifact Model
+
+## Core artifact types
+
+```text
+RawInput
+InputSummary
+RefineryNote
+AmbiguityRegister
+DecisionQueue
+Decision
+SpecDelta
+PatchPlan
+EvalReport
+AuditReport
+```
+
+## Status values
+
+```text
+draft
+proposed
+accepted
+rejected
+deferred
+compiled
+applied
+superseded
+```
+
+## Lineage
+
+Every artifact should record:
+
+```text
+created_by_command
+created_at
+input_artifact_ids
+source_files
+schema_version
+backend
+model/prompt/config when applicable
+```

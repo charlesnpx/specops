@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DocFrontmatter",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "doc_type",
+    "status",
+    "normative",
+    "version_scope"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "doc_type": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "proposed",
+        "accepted",
+        "deferred",
+        "superseded",
+        "deprecated",
+        "rejected"
+      ]
+    },
+    "normative": {
+      "type": "boolean"
+    },
+    "version_scope": {
+      "type": "string"
+    },
+    "last_reviewed": {
+      "type": "string"
+    }
+  }
+}

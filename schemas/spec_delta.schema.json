@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SpecDelta",
+  "type": "object",
+  "required": [
+    "schema",
+    "run_id",
+    "source_summary",
+    "decisions",
+    "affected_docs",
+    "patch_plan"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "source_summary": {
+      "type": "string"
+    },
+    "new_concepts": {
+      "type": "array"
+    },
+    "requirements": {
+      "type": "array"
+    },
+    "constraints": {
+      "type": "array"
+    },
+    "assumptions": {
+      "type": "array"
+    },
+    "ambiguities": {
+      "type": "array"
+    },
+    "options": {
+      "type": "array"
+    },
+    "recommendations": {
+      "type": "array"
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decision"
+      }
+    },
+    "affected_docs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "version_scope_changes": {
+      "type": "array"
+    },
+    "implementation_phase_changes": {
+      "type": "array"
+    },
+    "acceptance_criteria": {
+      "type": "array"
+    },
+    "open_questions": {
+      "type": "array"
+    },
+    "risks": {
+      "type": "array"
+    },
+    "patch_plan": {
+      "type": "array"
+    }
+  },
+  "$defs": {
+    "decision": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "accepted",
+            "rejected",
+            "deferred",
+            "amended",
+            "superseded"
+          ]
+        },
+        "adr_required": {
+          "type": "boolean"
+        },
+        "affected_docs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

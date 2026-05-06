@@ -1,0 +1,18 @@
+{
+  "name": "specops-cli-spec",
+  "generated_at": "2026-05-06",
+  "purpose": "Specification repository for a mise-en-place-compatible SpecOps CLI/toolchain.",
+  "status": "v0_specification",
+  "primary_contracts": [
+    "mise-en-place delegated installer contract",
+    "target repo .specops operating scaffold",
+    "run artifact state machine",
+    "human decision gate before canonical patching"
+  ],
+  "top_level_docs": [
+    "docs/CANON.md",
+    "docs/versions/v0_scope.md",
+    "docs/cross_cutting/mise_en_place_contract.md",
+    "docs/interfaces/cli_commands.md"
+  ]
+}

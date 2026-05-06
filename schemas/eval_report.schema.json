@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvalReport",
+  "type": "object",
+  "required": [
+    "schema",
+    "eval_id",
+    "gold",
+    "candidate",
+    "scores",
+    "findings"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "eval_id": {
+      "type": "string"
+    },
+    "gold": {
+      "type": "string"
+    },
+    "candidate": {
+      "type": "string"
+    },
+    "scores": {
+      "type": "object"
+    },
+    "findings": {
+      "type": "array"
+    }
+  }
+}

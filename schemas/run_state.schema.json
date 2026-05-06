@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RunState",
+  "type": "object",
+  "required": [
+    "schema",
+    "run_id",
+    "status",
+    "created_at",
+    "inputs",
+    "artifacts",
+    "decisions"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "inputs": {
+      "type": "array"
+    },
+    "artifacts": {
+      "type": "array"
+    },
+    "decisions": {
+      "type": "object"
+    },
+    "next": {
+      "type": "object"
+    }
+  }
+}

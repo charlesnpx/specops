@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DelegatedInstallerReport",
+  "type": "object",
+  "required": [
+    "schema",
+    "name",
+    "version",
+    "operation",
+    "kind",
+    "targets",
+    "warnings"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "operation": {
+      "enum": [
+        "plan",
+        "install",
+        "uninstall"
+      ]
+    },
+    "kind": {
+      "const": "delegated"
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "pattern": "^/"
+                },
+                "sha256": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

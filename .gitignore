@@ -1,0 +1,5 @@
+.specops/runs/
+.specops/cache/
+.DS_Store
+/specops
+/dist/
