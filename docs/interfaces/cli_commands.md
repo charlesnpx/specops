@@ -47,9 +47,9 @@ specops fixture-build --from <path> --out <dir>
 
 ```sh
 specops intake <run-id>
-specops refine <run-id> [--from <file>]
-specops harden <run-id> [--backend convo-relay] [--from <file>]
-specops synthesize <run-id> [--from <spec_delta.json>]
+specops refine <run-id> --from <file>
+specops harden <run-id> --from <file> [--backend convo-relay]
+specops synthesize <run-id> --from <spec_delta.json>
 specops deepen <run-id> --target <concept-or-doc>
 ```
 
@@ -78,7 +78,7 @@ For compatibility with v0.1.1 run state, a prompt artifact without `stage` metad
   "run_id": "run-...",
   "status": "intake_complete",
   "next": {
-    "command": "specops refine run-...",
+    "command": "specops refine run-... --from <file>",
     "reason": "intake artifact is ready to refine",
     "stage": "refine",
     "gate_kind": "semantic",
@@ -96,9 +96,9 @@ For semantic gates, `note_command` gives the command shape for recording the cur
 
 ## Authored semantic artifacts
 
-`refine --from`, `harden --from`, and `synthesize --from` let an agent or human produce the semantic artifact outside the deterministic fallback. The CLI copies the supplied artifact into the run output without rewriting the content, then applies the same legal state transition as the fallback command. `synthesize --from` must receive a parseable `spec_delta.json`; its decisions are loaded into run state.
+`refine --from`, `harden --from`, and `synthesize --from` let an agent or human produce the semantic artifact outside the CLI. The CLI copies the supplied artifact into the run output without rewriting the content, then applies the legal state transition. `synthesize --from` must receive a parseable `spec_delta.json`; its decisions are loaded into run state.
 
-`specops refine`, `specops harden`, and `specops synthesize` are semantic production commands. Before running either deterministic fallback or `--from` mode, each command must find a recorded stage note for its own stage:
+`specops refine`, `specops harden`, and `specops synthesize` are semantic production commands. Before running, each command must find a recorded stage note for its own stage:
 
 ```sh
 specops note <run-id> --stage refine --text <file-or-inline>
@@ -112,6 +112,23 @@ If the matching stage note is missing, the command must fail without writing an 
 specops context <run-id>
 specops note <run-id> --stage <stage> --text <file-or-inline>
 ```
+
+After the matching stage note exists, these semantic production commands still require `--from`. The note records guidance and provenance; it is not semantic source material that the CLI transforms. If `--from` is omitted, the command must fail without writing an output artifact or advancing run status and explain that the CLI is not AI-enabled and requires an authored artifact.
+
+## Compile behavior
+
+`specops compile <run-id> --accepted-only` loads the accepted decisions and the run's `outputs/spec_delta.json`. It may be rerun from `decisions_accepted`, `compiled`, or `planned` to regenerate an unsafe patch plan before apply. The patch plan must include reviewed provenance and must also represent accepted canonical doc work from the spec delta:
+
+- exact authored `patch_items` are preserved when present
+- otherwise accepted canonical `affected_docs` receive deterministic create items generated from the structured delta fields and accepted decisions
+- `docs/research/refinery/` provenance remains a separate reviewed provenance item
+
+Patch plans expose separate health flags:
+
+- `stale`: compile inputs changed after plan creation, such as spec delta, accepted decisions, provenance inputs, or compiler contract version
+- `incomplete`: the plan does not cover the current accepted delta, even when the inputs have not changed
+
+`specops apply` refuses a stale or incomplete patch plan unless `--allow-unsafe-plan` is explicitly passed. `--dry-run` remains available for inspecting unsafe plans without mutating files.
 
 ## Decisions
 
@@ -128,7 +145,7 @@ specops amend <run-id> <decision-id> --text <file-or-inline>
 ```sh
 specops compile <run-id> --accepted-only
 specops plan <run-id>
-specops apply <run-id> [--interactive] [--dry-run] [--commit]
+specops apply <run-id> [--interactive] [--dry-run] [--commit] [--allow-unsafe-plan]
 specops audit
 ```
 

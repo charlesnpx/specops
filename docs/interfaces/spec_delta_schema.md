@@ -34,7 +34,26 @@ acceptance_criteria: []
 open_questions: []
 risks: []
 patch_plan: []
+patch_items: []
 ```
+
+List fields in the Go `SpecDelta` struct are string lists unless otherwise noted. `affected_docs` is a list of relative doc paths, not objects.
+
+`patch_plan` is a human-readable string list. `patch_items` is the optional exact file-level patch form used when the author wants compile to preserve canonical document content exactly:
+
+```yaml
+patch_items:
+  - action: create
+    path: docs/CANON.md
+    title: Create canonical frame
+    content: |
+      ---
+      id: canon
+      ...
+    decision_ids: [D001]
+```
+
+When `patch_items` is absent, compile may generate deterministic canonical doc patches for accepted `affected_docs` from the structured delta fields and accepted decisions.
 
 ## Decision linkage
 

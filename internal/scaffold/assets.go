@@ -2,7 +2,7 @@ package scaffold
 
 import "fmt"
 
-const Version = "0.1.2"
+const Version = "0.1.3-dev"
 
 func files(mode, agent string) map[string]string {
 	return map[string]string{
@@ -66,7 +66,7 @@ Rules:
 - Do not patch canonical docs before decisions are accepted.
 - Keep run artifacts under .specops/runs/.
 - Promote reviewed provenance to docs/research/refinery/.
-- Record a stage note before semantic commands: refine, harden, and synthesize.
+- Record a stage note and pass an authored artifact with --from before semantic commands: refine, harden, and synthesize.
 - Use ADRs for consequential accepted decisions.
 - Update interfaces when behavior changes.
 `
@@ -193,7 +193,37 @@ const specDeltaSchema = `{
   "required": ["schema", "run_id", "source_summary", "decisions", "affected_docs", "patch_plan"],
   "properties": {
     "schema": {"const": 1},
-    "run_id": {"type": "string"}
+    "run_id": {"type": "string"},
+    "source_summary": {"type": "string"},
+    "new_concepts": {"type": "array", "items": {"type": "string"}},
+    "requirements": {"type": "array", "items": {"type": "string"}},
+    "constraints": {"type": "array", "items": {"type": "string"}},
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "ambiguities": {"type": "array", "items": {"type": "string"}},
+    "options": {"type": "array", "items": {"type": "string"}},
+    "recommendations": {"type": "array", "items": {"type": "string"}},
+    "affected_docs": {"type": "array", "items": {"type": "string"}},
+    "version_scope_changes": {"type": "array", "items": {"type": "string"}},
+    "implementation_phase_changes": {"type": "array", "items": {"type": "string"}},
+    "acceptance_criteria": {"type": "array", "items": {"type": "string"}},
+    "open_questions": {"type": "array", "items": {"type": "string"}},
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "patch_plan": {"type": "array", "items": {"type": "string"}},
+    "patch_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "content"],
+        "properties": {
+          "id": {"type": "string"},
+          "action": {"type": "string"},
+          "path": {"type": "string"},
+          "title": {"type": "string"},
+          "content": {"type": "string"},
+          "decision_ids": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
   }
 }
 `

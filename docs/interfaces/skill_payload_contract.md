@@ -62,11 +62,12 @@ Claude and Codex payloads must define the skill-led interactive operator loop:
 - Agents read the run artifacts and ask at most three content-aware open-ended questions in one batch, plus one control question asking whether to continue, pause, or change direction.
 - A user answer of `continue` applies only to the current semantic gate and is never permission to cross multiple semantic gates.
 - After an answer batch, agents record guidance with `specops note <run-id> --stage <stage> --text <file-or-inline>`.
-- Agents run at most the one semantic command for the current stage, then refresh `specops context <run-id>` before running anything else.
+- For `refine`, `harden`, and `synthesize`, agents author the semantic artifact themselves as a draft run artifact before invoking the CLI transition.
+- Agents run at most the one semantic command for the current stage with `--from <file>`, then refresh `specops context <run-id>` before running anything else.
 - If refreshed context reports another semantic gate, agents MUST stop and ask that gate's questions before running any command.
-- Agents use `--from <file>` when they or the operator authored the `refine`, `harden`, or `synthesize` artifact.
+- At the apply gate, agents inspect patch plan health and treat both `stale` and `incomplete` as unsafe states. They rerun `specops compile <run-id> --accepted-only` when either flag is true before asking the operator whether to apply.
 
-The payload must explain that `specops refine`, `specops harden`, and `specops synthesize` require a matching recorded stage note before either fallback or `--from` mode can run.
+The payload must explain that stage notes record guidance and provenance; they are not semantic source material that the CLI transforms. It must also explain that `specops refine`, `specops harden`, and `specops synthesize` require both a matching recorded stage note and an authored artifact passed with `--from`.
 
 The payload source used by the installer and release assets must remain equivalent; installer tests should fail if payloads drift.
 

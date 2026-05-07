@@ -53,17 +53,14 @@ func RefineFrom(repo, runID, from string) (ProductionResult, error) {
 	if err := requireStageNote(state, "refine"); err != nil {
 		return ProductionResult{}, err
 	}
-	content := ""
-	if from != "" {
-		raw, err := os.ReadFile(from)
-		if err != nil {
-			return ProductionResult{}, err
-		}
-		content = string(raw)
-	} else {
-		intake := readRunFile(repo, state.RunID, "outputs", "intake.md")
-		content = fmt.Sprintf("# Refined Specification Notes\n\nRun: `%s`\n\n## Refined material\n\n%s\n\n## Candidate requirements\n\n- Preserve source provenance in run artifacts.\n- Present decisions explicitly before canonical mutation.\n", state.RunID, intake)
+	if err := requireAuthoredArtifact(state, "refine", from, "specops refine "+state.RunID+" --from <file>"); err != nil {
+		return ProductionResult{}, err
 	}
+	raw, err := os.ReadFile(from)
+	if err != nil {
+		return ProductionResult{}, err
+	}
+	content := string(raw)
 	ref, err := writeOutput(repo, state, "refined.md", "refined", content)
 	if err != nil {
 		return ProductionResult{}, err
@@ -93,17 +90,14 @@ func HardenFrom(repo, runID, backend, from string) (ProductionResult, error) {
 	if backend == "" {
 		backend = "manual"
 	}
-	content := ""
-	if from != "" {
-		raw, err := os.ReadFile(from)
-		if err != nil {
-			return ProductionResult{}, err
-		}
-		content = string(raw)
-	} else {
-		refined := readRunFile(repo, state.RunID, "outputs", "refined.md")
-		content = fmt.Sprintf("# Hardened Notes\n\nRun: `%s`\n\nBackend: `%s`\n\n## Challenge pass\n\n%s\n\n## Risks and checks\n\n- Confirm every consequential change has an accepted decision.\n- Confirm ADRs are appended rather than rewritten.\n- Confirm interface behavior changes update interface docs.\n", state.RunID, backend, refined)
+	if err := requireAuthoredArtifact(state, "harden", from, "specops harden "+state.RunID+" --from <file>"); err != nil {
+		return ProductionResult{}, err
 	}
+	raw, err := os.ReadFile(from)
+	if err != nil {
+		return ProductionResult{}, err
+	}
+	content := string(raw)
 	ref, err := writeOutput(repo, state, "hardened.md", "hardened", content)
 	if err != nil {
 		return ProductionResult{}, err
@@ -130,68 +124,29 @@ func SynthesizeFrom(repo, runID, from string) (ProductionResult, error) {
 	if err := requireStageNote(state, "synthesize"); err != nil {
 		return ProductionResult{}, err
 	}
-	if from != "" {
-		raw, err := os.ReadFile(from)
-		if err != nil {
-			return ProductionResult{}, err
-		}
-		var delta SpecDelta
-		if err := json.Unmarshal(raw, &delta); err != nil {
-			return ProductionResult{}, err
-		}
-		if delta.RunID != "" && delta.RunID != state.RunID {
-			return ProductionResult{}, fmt.Errorf("spec delta run_id %q does not match %q", delta.RunID, state.RunID)
-		}
-		path := filepath.Join(runstate.RunDir(repo, state.RunID), "outputs", "spec_delta.json")
-		if err := os.WriteFile(path, raw, 0o644); err != nil {
-			return ProductionResult{}, err
-		}
-		ref := runstate.ArtifactRef{ID: fmt.Sprintf("spec_delta-%03d", len(state.Artifacts)+1), Type: "spec_delta", Path: "outputs/spec_delta.json", CreatedAt: time.Now().UTC().Format(time.RFC3339)}
-		state.Artifacts = append(state.Artifacts, ref)
-		for _, decision := range delta.Decisions {
-			state.Decisions[decision.ID] = decision
-		}
-		state.Status = runstate.StatusAwaitingDecisions
-		if err := runstate.Save(repo, state); err != nil {
-			return ProductionResult{}, err
-		}
-		return ProductionResult{RunID: state.RunID, Status: state.Status, Artifact: ref}, nil
+	if err := requireAuthoredArtifact(state, "synthesize", from, "specops synthesize "+state.RunID+" --from <spec_delta.json>"); err != nil {
+		return ProductionResult{}, err
 	}
-	source := readRunFile(repo, state.RunID, "outputs", "hardened.md")
-	if source == "" {
-		source = readRunFile(repo, state.RunID, "outputs", "refined.md")
-	}
-	decision := runstate.Decision{
-		ID:             "DEC-0001",
-		Title:          "Accept synthesized run provenance for review",
-		Status:         "proposed",
-		Options:        []string{"accept", "reject", "defer"},
-		Recommendation: "accept",
-		Rationale:      "The run produced reviewable provenance without directly mutating canonical docs.",
-		ADRRequired:    false,
-		AffectedDocs:   []string{"docs/research/refinery/"},
-	}
-	delta := SpecDelta{
-		Schema:             1,
-		RunID:              state.RunID,
-		SourceSummary:      trimForSummary(source),
-		Decisions:          []runstate.Decision{decision},
-		AffectedDocs:       []string{"docs/research/refinery/"},
-		Recommendations:    []string{"Promote reviewed run provenance before making canonical specification changes."},
-		AcceptanceCriteria: []string{"Compiled patch plan writes reviewed provenance only after the decision is accepted."},
-		PatchPlan:          []string{"Create docs/research/refinery/" + state.RunID + ".md from run artifacts."},
-	}
-	raw, err := json.MarshalIndent(delta, "", "  ")
+	raw, err := os.ReadFile(from)
 	if err != nil {
 		return ProductionResult{}, err
 	}
+	var delta SpecDelta
+	if err := json.Unmarshal(raw, &delta); err != nil {
+		return ProductionResult{}, err
+	}
+	if delta.RunID != "" && delta.RunID != state.RunID {
+		return ProductionResult{}, fmt.Errorf("spec delta run_id %q does not match %q", delta.RunID, state.RunID)
+	}
 	path := filepath.Join(runstate.RunDir(repo, state.RunID), "outputs", "spec_delta.json")
-	if err := os.WriteFile(path, append(raw, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(path, raw, 0o644); err != nil {
 		return ProductionResult{}, err
 	}
 	ref := runstate.ArtifactRef{ID: fmt.Sprintf("spec_delta-%03d", len(state.Artifacts)+1), Type: "spec_delta", Path: "outputs/spec_delta.json", CreatedAt: time.Now().UTC().Format(time.RFC3339)}
 	state.Artifacts = append(state.Artifacts, ref)
-	state.Decisions[decision.ID] = decision
+	for _, decision := range delta.Decisions {
+		state.Decisions[decision.ID] = decision
+	}
 	state.Status = runstate.StatusAwaitingDecisions
 	if err := runstate.Save(repo, state); err != nil {
 		return ProductionResult{}, err
@@ -204,6 +159,13 @@ func requireStageNote(state *runstate.RunState, stage string) error {
 		return nil
 	}
 	return fmt.Errorf("semantic gate %q requires a recorded stage note before execution\nrefresh context: specops context %s\nrecord note: specops note %s --stage %s --text <file-or-inline>", stage, state.RunID, state.RunID, stage)
+}
+
+func requireAuthoredArtifact(state *runstate.RunState, stage, from, command string) error {
+	if strings.TrimSpace(from) != "" {
+		return nil
+	}
+	return fmt.Errorf("semantic gate %q requires an authored artifact via --from because the CLI is not AI-enabled and cannot generate content-aware %s output\nrefresh context: specops context %s\nrecord note: specops note %s --stage %s --text <file-or-inline>\nrun command: %s", stage, stage, state.RunID, state.RunID, stage, command)
 }
 
 func Deepen(repo, runID, target string) (ProductionResult, error) {

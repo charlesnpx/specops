@@ -61,6 +61,15 @@ func (a *App) newPlanCommand() *cobra.Command {
 			if a.JSON {
 				return a.writeJSON(plan)
 			}
+			if plan.Health.Stale || plan.Health.Incomplete {
+				a.humanf("warning: patch plan stale=%t incomplete=%t\n", plan.Health.Stale, plan.Health.Incomplete)
+				for _, reason := range plan.Health.StaleReasons {
+					a.humanf("stale: %s\n", reason)
+				}
+				for _, reason := range plan.Health.IncompleteReasons {
+					a.humanf("incomplete: %s\n", reason)
+				}
+			}
 			for _, item := range plan.Items {
 				a.humanf("%s\t%s\t%s\n", item.ID, item.Action, item.Path)
 			}
@@ -73,8 +82,9 @@ func (a *App) newApplyCommand() *cobra.Command {
 	var interactive bool
 	var dryRun bool
 	var commit bool
+	var allowUnsafePlan bool
 	cmd := &cobra.Command{
-		Use:   "apply <run-id> [--interactive] [--dry-run] [--commit]",
+		Use:   "apply <run-id> [--interactive] [--dry-run] [--commit] [--allow-unsafe-plan]",
 		Short: "Apply a reviewed patch plan",
 		Args:  requireArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -83,7 +93,7 @@ func (a *App) newApplyCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			result, err := artifacts.Apply(repo, args[0], dryRun, commit)
+			result, err := artifacts.Apply(repo, args[0], dryRun, commit, allowUnsafePlan)
 			if err != nil {
 				return err
 			}
@@ -102,6 +112,7 @@ func (a *App) newApplyCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&interactive, "interactive", false, "prompt for patch decisions where supported")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be written")
 	cmd.Flags().BoolVar(&commit, "commit", false, "commit applied files when the repo is a git worktree")
+	cmd.Flags().BoolVar(&allowUnsafePlan, "allow-unsafe-plan", false, "apply even when the patch plan is stale or incomplete")
 	return cmd
 }
 

@@ -53,4 +53,4 @@ backend
 model/prompt/config when applicable
 ```
 
-Prompt artifacts recorded by `specops note` also record the semantic `stage` they apply to. The stage metadata is used to enforce semantic production gates before `refine`, `harden`, or `synthesize` can produce their next artifacts.
+Prompt artifacts recorded by `specops note` also record the semantic `stage` they apply to. The stage metadata is used to enforce semantic production gates before `refine`, `harden`, or `synthesize` can copy authored `--from` artifacts into the run.
