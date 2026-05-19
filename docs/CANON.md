@@ -81,7 +81,7 @@ run management:
   run new, run list, run show, run status, next
 
 input/process:
-  ingest, mine-trace, intake, refine, harden, synthesize, deepen
+  ingest, mine-trace, intake, refine, harden, synthesize, supersede-synthesis, deepen
 
 decision gate:
   decisions, accept, reject, defer, amend
@@ -136,6 +136,7 @@ raw input
   -> synthesize spec delta
   -> human decision gate
   -> compile patch plan
+  -> optionally supersede synthesis before apply if plan review finds semantic content gaps
   -> apply accepted canonical patches
   -> audit
   -> eval/reproduce when relevant

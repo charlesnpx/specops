@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -30,6 +31,31 @@ func TestPlanUsesAbsoluteStagedPaths(t *testing.T) {
 			}
 			if file.SHA256 != "" {
 				t.Fatalf("plan should not include sha256 for %s", file.Path)
+			}
+		}
+	}
+}
+
+func TestSkillPayloadExplainsPatchItemsForSynthesize(t *testing.T) {
+	root := t.TempDir()
+	files, err := plannedFiles(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.3-dev"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		if file.Target != TargetClaude && file.Target != TargetCodex {
+			continue
+		}
+		payload := string(file.Content)
+		for _, want := range []string{
+			"patch_items[].content",
+			"patch_plan only for human-readable compile notes",
+			"affected_docs only for coverage",
+			"specops supersede-synthesis",
+			"Do not pass --reopen-decisions",
+		} {
+			if !strings.Contains(payload, want) {
+				t.Fatalf("%s payload should explain %q", file.Target, want)
 			}
 		}
 	}

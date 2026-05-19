@@ -12,7 +12,7 @@ var transitions = map[Status][]Status{
 	StatusAwaitingDecisions: {StatusDecisionsAccepted},
 	StatusDecisionsAccepted: {StatusCompiled},
 	StatusCompiled:          {StatusPlanned},
-	StatusPlanned:           {StatusApplied},
+	StatusPlanned:           {StatusAwaitingDecisions, StatusDecisionsAccepted, StatusApplied},
 	StatusApplied:           {StatusAudited},
 	StatusAudited:           {StatusEvaluated},
 }
@@ -74,7 +74,7 @@ func NextForStatus(status Status, runID string) *NextAction {
 		return semantic("apply", "specops apply "+runID, "reviewed plan can be applied", contextCommand, noteCommand("apply"), []string{
 			"Has the compiled patch plan been reviewed against the accepted decisions?",
 			"Should apply run as a dry run, interactive apply, or direct apply?",
-			"Are there local files that need checking before mutation?",
+			"Is the patch content complete, or should synthesis be superseded before apply?",
 		})
 	case StatusApplied:
 		return mechanical("audit", "specops audit", "applied changes should be audited", contextCommand)

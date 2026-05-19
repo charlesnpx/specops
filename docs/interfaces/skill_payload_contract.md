@@ -63,9 +63,11 @@ Claude and Codex payloads must define the skill-led interactive operator loop:
 - A user answer of `continue` applies only to the current semantic gate and is never permission to cross multiple semantic gates.
 - After an answer batch, agents record guidance with `specops note <run-id> --stage <stage> --text <file-or-inline>`.
 - For `refine`, `harden`, and `synthesize`, agents author the semantic artifact themselves as a draft run artifact before invoking the CLI transition.
+- When authoring `spec_delta.json` for `synthesize`, agents put full canonical document bodies in `patch_items[].content` whenever deterministic generated docs would be too thin. Agents use `patch_plan` only for human-readable compile notes and `affected_docs` only for coverage.
 - Agents run at most the one semantic command for the current stage with `--from <file>`, then refresh `specops context <run-id>` before running anything else.
 - If refreshed context reports another semantic gate, agents MUST stop and ask that gate's questions before running any command.
 - At the apply gate, agents inspect patch plan health and treat both `stale` and `incomplete` as unsafe states. They rerun `specops compile <run-id> --accepted-only` when either flag is true before asking the operator whether to apply.
+- At the apply gate, when the patch plan is mechanically healthy but semantically too thin, agents record an apply-stage note, author a replacement `spec_delta.json` with `patch_items`, run `specops supersede-synthesis <run-id> --from <spec_delta.json>`, refresh context, and recompile. They must not pass `--reopen-decisions` unless the operator explicitly wants settled decisions reopened.
 
 The payload must explain that stage notes record guidance and provenance; they are not semantic source material that the CLI transforms. It must also explain that `specops refine`, `specops harden`, and `specops synthesize` require both a matching recorded stage note and an authored artifact passed with `--from`.
 

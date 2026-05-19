@@ -11,6 +11,7 @@ func (a *App) newProductionCommands() []*cobra.Command {
 		a.newRefineCommand(),
 		a.newHardenCommand(),
 		a.newSynthesizeCommand(),
+		a.newSupersedeSynthesisCommand(),
 		a.newDeepenCommand(),
 	}
 }
@@ -118,6 +119,34 @@ func (a *App) newSynthesizeCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&from, "from", "", "required agent or human-authored spec_delta.json")
+	return cmd
+}
+
+func (a *App) newSupersedeSynthesisCommand() *cobra.Command {
+	var from string
+	var reopenDecisions bool
+	cmd := &cobra.Command{
+		Use:   "supersede-synthesis <run-id> --from <spec_delta.json> [--reopen-decisions]",
+		Short: "Replace a planned run's synthesized spec delta before apply",
+		Args:  requireArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, err := a.repoRoot()
+			if err != nil {
+				return err
+			}
+			result, err := artifacts.SupersedeSynthesisFrom(repo, args[0], from, reopenDecisions)
+			if err != nil {
+				return err
+			}
+			if a.JSON {
+				return a.writeJSON(result)
+			}
+			a.humanf("superseded synthesis for %s; status=%s archived=%d\n", result.RunID, result.Status, len(result.ArchivedArtifacts))
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&from, "from", "", "required replacement spec_delta.json")
+	cmd.Flags().BoolVar(&reopenDecisions, "reopen-decisions", false, "allow new or changed decisions and return to the decision gate")
 	return cmd
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -15,6 +16,14 @@ type ProductionResult struct {
 	RunID    string               `json:"run_id"`
 	Status   runstate.Status      `json:"status"`
 	Artifact runstate.ArtifactRef `json:"artifact"`
+}
+
+type SupersedeSynthesisResult struct {
+	RunID             string                 `json:"run_id"`
+	Status            runstate.Status        `json:"status"`
+	Artifact          runstate.ArtifactRef   `json:"artifact"`
+	ArchivedArtifacts []runstate.ArtifactRef `json:"archived_artifacts"`
+	ReopenedDecisions bool                   `json:"reopened_decisions"`
 }
 
 func Intake(repo, runID string) (ProductionResult, error) {
@@ -152,6 +161,145 @@ func SynthesizeFrom(repo, runID, from string) (ProductionResult, error) {
 		return ProductionResult{}, err
 	}
 	return ProductionResult{RunID: state.RunID, Status: state.Status, Artifact: ref}, nil
+}
+
+func SupersedeSynthesisFrom(repo, runID, from string, reopenDecisions bool) (SupersedeSynthesisResult, error) {
+	state, err := runstate.Load(repo, runID)
+	if err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	if state.Status != runstate.StatusPlanned {
+		return SupersedeSynthesisResult{}, fmt.Errorf("supersede-synthesis requires status %s, got %s", runstate.StatusPlanned, state.Status)
+	}
+	if err := requireStageNote(state, "apply"); err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	if strings.TrimSpace(from) == "" {
+		return SupersedeSynthesisResult{}, fmt.Errorf("semantic gate %q requires an authored replacement spec delta via --from because the CLI is not AI-enabled and cannot generate content-aware apply output\nrefresh context: specops context %s\nrecord note: specops note %s --stage apply --text <file-or-inline>\nrun command: specops supersede-synthesis %s --from <spec_delta.json>", "apply", state.RunID, state.RunID, state.RunID)
+	}
+	raw, err := os.ReadFile(from)
+	if err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	var delta SpecDelta
+	if err := json.Unmarshal(raw, &delta); err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	if delta.RunID != "" && delta.RunID != state.RunID {
+		return SupersedeSynthesisResult{}, fmt.Errorf("spec delta run_id %q does not match %q", delta.RunID, state.RunID)
+	}
+	if !reopenDecisions {
+		if err := requireNoSettledDecisionChanges(state.Decisions, delta.Decisions); err != nil {
+			return SupersedeSynthesisResult{}, err
+		}
+	}
+
+	now := time.Now().UTC()
+	var archived []runstate.ArtifactRef
+	specDeltaArchive := filepath.ToSlash(filepath.Join("outputs", "superseded", now.Format("20060102-150405-000000000")+"-spec_delta.json"))
+	refs, err := archiveCurrentRunFile(repo, state, "outputs/spec_delta.json", specDeltaArchive, "superseded_spec_delta", now)
+	if err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	archived = append(archived, refs...)
+	patchPlanArchive := filepath.ToSlash(filepath.Join("patches", "superseded", now.Format("20060102-150405-000000000")+"-patch_plan.json"))
+	refs, err = archiveCurrentRunFile(repo, state, "patches/patch_plan.json", patchPlanArchive, "superseded_patch_plan", now)
+	if err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	archived = append(archived, refs...)
+	if err := removeRunFile(repo, state.RunID, "patches", "patch_plan.json"); err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+
+	path := filepath.Join(runstate.RunDir(repo, state.RunID), "outputs", "spec_delta.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	if err := os.WriteFile(path, raw, 0o644); err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	ref := runstate.ArtifactRef{ID: fmt.Sprintf("spec_delta-%03d", len(state.Artifacts)+1), Type: "spec_delta", Path: "outputs/spec_delta.json", CreatedAt: now.Format(time.RFC3339)}
+	state.Artifacts = append(state.Artifacts, ref)
+
+	if reopenDecisions {
+		for _, decision := range delta.Decisions {
+			state.Decisions[decision.ID] = decision
+		}
+		state.Status = runstate.StatusAwaitingDecisions
+	} else {
+		state.Status = runstate.StatusDecisionsAccepted
+	}
+	if err := runstate.Save(repo, state); err != nil {
+		return SupersedeSynthesisResult{}, err
+	}
+	return SupersedeSynthesisResult{RunID: state.RunID, Status: state.Status, Artifact: ref, ArchivedArtifacts: archived, ReopenedDecisions: reopenDecisions}, nil
+}
+
+func requireNoSettledDecisionChanges(existing map[string]runstate.Decision, incoming []runstate.Decision) error {
+	for _, decision := range incoming {
+		current, ok := existing[decision.ID]
+		if !ok {
+			return fmt.Errorf("replacement spec delta introduces decision %q; pass --reopen-decisions to reopen the decision gate", decision.ID)
+		}
+		if !sameSettledDecisionSubstance(current, decision) {
+			return fmt.Errorf("replacement spec delta changes settled decision %q; pass --reopen-decisions to reopen the decision gate", decision.ID)
+		}
+	}
+	return nil
+}
+
+func sameSettledDecisionSubstance(a, b runstate.Decision) bool {
+	return a.ID == b.ID &&
+		a.Title == b.Title &&
+		reflect.DeepEqual(a.Options, b.Options) &&
+		a.Recommendation == b.Recommendation &&
+		a.Rationale == b.Rationale &&
+		a.ADRRequired == b.ADRRequired &&
+		reflect.DeepEqual(a.AffectedDocs, b.AffectedDocs)
+}
+
+func archiveCurrentRunFile(repo string, state *runstate.RunState, currentRel, archiveRel, archiveType string, now time.Time) ([]runstate.ArtifactRef, error) {
+	currentRel = filepath.ToSlash(currentRel)
+	archiveRel = filepath.ToSlash(archiveRel)
+	source := filepath.Join(runstate.RunDir(repo, state.RunID), filepath.FromSlash(currentRel))
+	raw, err := os.ReadFile(source)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	dest := filepath.Join(runstate.RunDir(repo, state.RunID), filepath.FromSlash(archiveRel))
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(dest, raw, 0o644); err != nil {
+		return nil, err
+	}
+	var archived []runstate.ArtifactRef
+	for i := range state.Artifacts {
+		if filepath.ToSlash(state.Artifacts[i].Path) != currentRel {
+			continue
+		}
+		state.Artifacts[i].Type = archiveType
+		state.Artifacts[i].Path = archiveRel
+		archived = append(archived, state.Artifacts[i])
+	}
+	if len(archived) == 0 {
+		ref := runstate.ArtifactRef{ID: fmt.Sprintf("%s-%03d", archiveType, len(state.Artifacts)+1), Type: archiveType, Path: archiveRel, CreatedAt: now.Format(time.RFC3339)}
+		state.Artifacts = append(state.Artifacts, ref)
+		archived = append(archived, ref)
+	}
+	return archived, nil
+}
+
+func removeRunFile(repo, runID string, parts ...string) error {
+	path := filepath.Join(append([]string{runstate.RunDir(repo, runID)}, parts...)...)
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 func requireStageNote(state *runstate.RunState, stage string) error {

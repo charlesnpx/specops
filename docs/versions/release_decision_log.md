@@ -54,3 +54,15 @@ Accepted v0.1.3-dev patch plan health direction:
 ```text
 Patch plan health separates stale input hashes from incomplete accepted-delta coverage; direct apply blocks either unsafe state unless explicitly overridden.
 ```
+
+Accepted v0.1.3-dev synthesis authoring direction:
+
+```text
+Spec delta templates and skill payloads expose patch_items as the high-fidelity canonical-content path; patch_plan remains human-readable notes and affected_docs remains coverage.
+```
+
+Accepted v0.1.3-dev pre-apply supersession direction:
+
+```text
+Planned runs can supersede a too-thin synthesized delta before apply, archiving old current artifacts and returning to compile without reopening settled decisions by default.
+```

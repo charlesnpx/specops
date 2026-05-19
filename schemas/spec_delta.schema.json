@@ -105,12 +105,14 @@
       }
     },
     "patch_plan": {
+      "description": "Human-readable compile notes only. Full canonical document bodies belong in patch_items[].content.",
       "type": "array",
       "items": {
         "type": "string"
       }
     },
     "patch_items": {
+      "description": "Optional exact file-level patches. Use when compile must preserve rich authored canonical document content.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/patch_item"
@@ -188,6 +190,7 @@
           "type": "string"
         },
         "content": {
+          "description": "Exact file content to place in the patch plan item.",
           "type": "string"
         },
         "decision_ids": {

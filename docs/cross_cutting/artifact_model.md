@@ -54,3 +54,5 @@ model/prompt/config when applicable
 ```
 
 Prompt artifacts recorded by `specops note` also record the semantic `stage` they apply to. The stage metadata is used to enforce semantic production gates before `refine`, `harden`, or `synthesize` can copy authored `--from` artifacts into the run.
+
+Pre-apply synthesis supersession preserves lineage by reclassifying current `SpecDelta` and `PatchPlan` artifact refs to superseded archive paths before writing a replacement current spec delta.

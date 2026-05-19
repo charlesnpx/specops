@@ -67,6 +67,8 @@ Rules:
 - Keep run artifacts under .specops/runs/.
 - Promote reviewed provenance to docs/research/refinery/.
 - Record a stage note and pass an authored artifact with --from before semantic commands: refine, harden, and synthesize.
+- During synthesize, put full canonical document bodies in spec_delta.patch_items[].content when generated docs would be too thin. patch_plan is notes only; affected_docs is coverage only.
+- At the apply gate, use specops supersede-synthesis <run-id> --from <spec_delta.json> after an apply-stage note when the patch plan is structurally valid but semantically too thin.
 - Use ADRs for consequential accepted decisions.
 - Update interfaces when behavior changes.
 `
@@ -118,9 +120,46 @@ Proposed.
 const specDeltaTemplate = `schema: 1
 run_id: run-YYYYMMDD-HHMMSS-slug
 source_summary: ""
+new_concepts: []
+requirements: []
+constraints: []
+assumptions: []
+ambiguities: []
+options: []
+recommendations: []
 decisions: []
 affected_docs: []
+version_scope_changes: []
+implementation_phase_changes: []
+acceptance_criteria: []
+open_questions: []
+risks: []
+
+# Human-readable compile notes only. Do not put full document bodies here.
 patch_plan: []
+
+# Optional exact file-level patches. Use this when canonical docs need rich
+# authored content; otherwise compile generates skeletal docs from affected_docs.
+patch_items: []
+# patch_items:
+#   - action: create
+#     path: docs/CANON.md
+#     title: Create canonical frame
+#     decision_ids: [D001]
+#     content: |
+#       ---
+#       id: canon
+#       title: ...
+#       doc_type: canon
+#       status: accepted
+#       normative: true
+#       version_scope: v0_required
+#       last_reviewed: 2026-05-06
+#       ---
+#
+#       # Canonical Title
+#
+#       Full authored document body.
 `
 
 const structureEval = `# Structure Eval
@@ -162,7 +201,10 @@ const runStateSchema = `{
         "type": "object",
         "properties": {
           "id": {"type": "string"},
-          "type": {"type": "string"},
+          "type": {
+            "description": "Artifact kind. Superseded current artifacts may use types such as superseded_spec_delta or superseded_patch_plan.",
+            "type": "string"
+          },
           "path": {"type": "string"},
           "stage": {"type": "string"},
           "created_at": {"type": "string"}
@@ -208,8 +250,13 @@ const specDeltaSchema = `{
     "acceptance_criteria": {"type": "array", "items": {"type": "string"}},
     "open_questions": {"type": "array", "items": {"type": "string"}},
     "risks": {"type": "array", "items": {"type": "string"}},
-    "patch_plan": {"type": "array", "items": {"type": "string"}},
+    "patch_plan": {
+      "description": "Human-readable compile notes only. Full canonical document bodies belong in patch_items[].content.",
+      "type": "array",
+      "items": {"type": "string"}
+    },
     "patch_items": {
+      "description": "Optional exact file-level patches. Use when compile must preserve rich authored canonical document content.",
       "type": "array",
       "items": {
         "type": "object",
@@ -219,7 +266,10 @@ const specDeltaSchema = `{
           "action": {"type": "string"},
           "path": {"type": "string"},
           "title": {"type": "string"},
-          "content": {"type": "string"},
+          "content": {
+            "description": "Exact file content to place in the patch plan item.",
+            "type": "string"
+          },
           "decision_ids": {"type": "array", "items": {"type": "string"}}
         }
       }

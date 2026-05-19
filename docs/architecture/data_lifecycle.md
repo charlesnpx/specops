@@ -22,6 +22,7 @@ raw input file/conversation/trace
   -> decision queue
   -> spec delta
   -> patch plan
+  -> optional superseded spec delta / patch plan archive after plan review
   -> canonical docs after apply
 ```
 

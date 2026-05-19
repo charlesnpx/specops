@@ -50,6 +50,7 @@ specops intake <run-id>
 specops refine <run-id> --from <file>
 specops harden <run-id> --from <file> [--backend convo-relay]
 specops synthesize <run-id> --from <spec_delta.json>
+specops supersede-synthesis <run-id> --from <spec_delta.json> [--reopen-decisions]
 specops deepen <run-id> --target <concept-or-doc>
 ```
 
@@ -98,6 +99,8 @@ For semantic gates, `note_command` gives the command shape for recording the cur
 
 `refine --from`, `harden --from`, and `synthesize --from` let an agent or human produce the semantic artifact outside the CLI. The CLI copies the supplied artifact into the run output without rewriting the content, then applies the legal state transition. `synthesize --from` must receive a parseable `spec_delta.json`; its decisions are loaded into run state.
 
+For `synthesize --from`, `patch_plan` is notes only and `affected_docs` is coverage only. Full canonical document bodies belong in `patch_items[].content` when deterministic generated docs would be too thin.
+
 `specops refine`, `specops harden`, and `specops synthesize` are semantic production commands. Before running, each command must find a recorded stage note for its own stage:
 
 ```sh
@@ -114,6 +117,22 @@ specops note <run-id> --stage <stage> --text <file-or-inline>
 ```
 
 After the matching stage note exists, these semantic production commands still require `--from`. The note records guidance and provenance; it is not semantic source material that the CLI transforms. If `--from` is omitted, the command must fail without writing an output artifact or advancing run status and explain that the CLI is not AI-enabled and requires an authored artifact.
+
+## Pre-apply synthesis supersession
+
+`specops supersede-synthesis <run-id> --from <spec_delta.json>` lets an operator replace a too-thin synthesized delta after `plan` review and before `apply`.
+
+The command requires:
+
+- run status `planned`
+- an `apply` stage note
+- a parseable replacement `spec_delta.json`
+
+By default, existing settled decisions remain settled. Replacement deltas may omit decisions or repeat existing decision IDs with the same substance, but they must not introduce new decision IDs or change settled decision substance. On success, the run returns to `decisions_accepted` so `compile --accepted-only` can regenerate the patch plan.
+
+With `--reopen-decisions`, the command may merge new or changed decisions from the replacement delta and returns the run to `awaiting_decisions`.
+
+Supersession is append-only. The previous current `outputs/spec_delta.json` and `patches/patch_plan.json` are copied under `outputs/superseded/` and `patches/superseded/`, old current artifact refs are reclassified as superseded refs, the current patch plan is removed, and the replacement delta becomes the current `outputs/spec_delta.json`.
 
 ## Compile behavior
 

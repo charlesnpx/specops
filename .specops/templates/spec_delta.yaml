@@ -10,4 +10,34 @@ options: []
 recommendations: []
 decisions: []
 affected_docs: []
+version_scope_changes: []
+implementation_phase_changes: []
+acceptance_criteria: []
+open_questions: []
+risks: []
+
+# Human-readable compile notes only. Do not put full document bodies here.
 patch_plan: []
+
+# Optional exact file-level patches. Use this when canonical docs need rich
+# authored content; otherwise compile generates skeletal docs from affected_docs.
+patch_items: []
+# patch_items:
+#   - action: create
+#     path: docs/CANON.md
+#     title: Create canonical frame
+#     decision_ids: [D001]
+#     content: |
+#       ---
+#       id: canon
+#       title: ...
+#       doc_type: canon
+#       status: accepted
+#       normative: true
+#       version_scope: v0_required
+#       last_reviewed: 2026-05-06
+#       ---
+#
+#       # Canonical Title
+#
+#       Full authored document body.

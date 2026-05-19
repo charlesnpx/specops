@@ -45,6 +45,7 @@
             "type": "string"
           },
           "type": {
+            "description": "Artifact kind. Superseded current artifacts may use types such as superseded_spec_delta or superseded_patch_plan.",
             "type": "string"
           },
           "path": {

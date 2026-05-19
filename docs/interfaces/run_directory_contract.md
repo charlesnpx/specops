@@ -27,10 +27,14 @@ last_reviewed: 2026-05-06
     ambiguity_register.yaml
     decision_queue.yaml
     spec_delta.json
-    patch_plan.json
+    superseded/
+      <timestamp>-spec_delta.json
   traces/
     backend_result.json
   patches/
+    patch_plan.json
+    superseded/
+      <timestamp>-patch_plan.json
     files/
   evals/
     eval_report.json
@@ -40,3 +44,5 @@ last_reviewed: 2026-05-06
 No file in `outputs/` is canonical until applied or promoted.
 
 Prompt Markdown files created by `specops note` are durable gate guidance. The run state artifact entry records the prompt `stage`; legacy prompt paths with `<timestamp>-<stage>.md` remain stage-checkable when metadata is absent.
+
+When pre-apply synthesis is superseded, old current output refs are reclassified to the archived superseded paths instead of being silently overwritten.
