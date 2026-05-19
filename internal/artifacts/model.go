@@ -21,14 +21,31 @@ type SpecDelta struct {
 	OpenQuestions              []string            `json:"open_questions,omitempty"`
 	Risks                      []string            `json:"risks,omitempty"`
 	PatchPlan                  []string            `json:"patch_plan"`
+	PatchItems                 []PatchItem         `json:"patch_items,omitempty"`
 }
 
 type PatchPlan struct {
-	Schema       int         `json:"schema"`
-	RunID        string      `json:"run_id"`
-	CreatedAt    string      `json:"created_at"`
-	AcceptedOnly bool        `json:"accepted_only"`
-	Items        []PatchItem `json:"items"`
+	Schema           int             `json:"schema"`
+	RunID            string          `json:"run_id"`
+	CreatedAt        string          `json:"created_at"`
+	CompilerContract string          `json:"compiler_contract,omitempty"`
+	AcceptedOnly     bool            `json:"accepted_only"`
+	Inputs           PatchPlanInputs `json:"inputs,omitempty"`
+	Health           PatchPlanHealth `json:"health"`
+	Items            []PatchItem     `json:"items"`
+}
+
+type PatchPlanInputs struct {
+	SpecDeltaSHA256         string `json:"spec_delta_sha256,omitempty"`
+	AcceptedDecisionsSHA256 string `json:"accepted_decisions_sha256,omitempty"`
+	ProvenanceSHA256        string `json:"provenance_sha256,omitempty"`
+}
+
+type PatchPlanHealth struct {
+	Stale             bool     `json:"stale"`
+	Incomplete        bool     `json:"incomplete"`
+	StaleReasons      []string `json:"stale_reasons,omitempty"`
+	IncompleteReasons []string `json:"incomplete_reasons,omitempty"`
 }
 
 type PatchItem struct {

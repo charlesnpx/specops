@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func TestPlanUsesAbsoluteStagedPaths(t *testing.T) {
 	root := t.TempDir()
-	report, err := Execute(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.2"})
+	report, err := Execute(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.3-dev"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,9 +36,34 @@ func TestPlanUsesAbsoluteStagedPaths(t *testing.T) {
 	}
 }
 
+func TestSkillPayloadExplainsPatchItemsForSynthesize(t *testing.T) {
+	root := t.TempDir()
+	files, err := plannedFiles(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.3-dev"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		if file.Target != TargetClaude && file.Target != TargetCodex {
+			continue
+		}
+		payload := string(file.Content)
+		for _, want := range []string{
+			"patch_items[].content",
+			"patch_plan only for human-readable compile notes",
+			"affected_docs only for coverage",
+			"specops supersede-synthesis",
+			"Do not pass --reopen-decisions",
+		} {
+			if !strings.Contains(payload, want) {
+				t.Fatalf("%s payload should explain %q", file.Target, want)
+			}
+		}
+	}
+}
+
 func TestInstallWritesInsideRootAndHashes(t *testing.T) {
 	root := t.TempDir()
-	report, err := Execute(Options{Operation: OperationInstall, Target: TargetAll, InstallRoot: root, Version: "0.1.2"})
+	report, err := Execute(Options{Operation: OperationInstall, Target: TargetAll, InstallRoot: root, Version: "0.1.3-dev"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +84,7 @@ func TestInstallWritesInsideRootAndHashes(t *testing.T) {
 
 func TestSkillPayloadAssetsMatchInstallerPayloads(t *testing.T) {
 	root := t.TempDir()
-	files, err := plannedFiles(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.2"})
+	files, err := plannedFiles(Options{Operation: OperationPlan, Target: TargetAll, InstallRoot: root, Version: "0.1.3-dev"})
 	if err != nil {
 		t.Fatal(err)
 	}

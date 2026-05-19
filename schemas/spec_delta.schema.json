@@ -21,25 +21,46 @@
       "type": "string"
     },
     "new_concepts": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "requirements": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "constraints": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "assumptions": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "ambiguities": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "options": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "recommendations": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "decisions": {
       "type": "array",
@@ -54,22 +75,48 @@
       }
     },
     "version_scope_changes": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "implementation_phase_changes": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "acceptance_criteria": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "open_questions": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "risks": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "patch_plan": {
-      "type": "array"
+      "description": "Human-readable compile notes only. Full canonical document bodies belong in patch_items[].content.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "patch_items": {
+      "description": "Optional exact file-level patches. Use when compile must preserve rich authored canonical document content.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/patch_item"
+      }
     }
   },
   "$defs": {
@@ -100,7 +147,53 @@
         "adr_required": {
           "type": "boolean"
         },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
         "affected_docs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "patch_item": {
+      "type": "object",
+      "required": [
+        "path",
+        "content"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "description": "Exact file content to place in the patch plan item.",
+          "type": "string"
+        },
+        "decision_ids": {
           "type": "array",
           "items": {
             "type": "string"

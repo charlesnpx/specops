@@ -31,3 +31,12 @@ Patch plans are structured before application.
   ]
 }
 ```
+
+Compile may create patch plan items from authored `spec_delta.patch_items`. When exact patch items are absent, compile may derive deterministic create items for accepted canonical `affected_docs` from the structured spec delta and accepted decisions.
+
+Patch plans expose health metadata:
+
+- stale means recorded compile inputs no longer match current run inputs
+- incomplete means the item set does not cover the current accepted delta
+
+Direct apply refuses either unsafe state unless explicitly overridden.

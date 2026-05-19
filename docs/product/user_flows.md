@@ -102,6 +102,10 @@ The CLI stores these artifacts under the run and preserves their content.
 specops accept run-001 --all-recommended
 specops compile run-001 --accepted-only
 specops plan run-001
+specops note run-001 --stage apply --text "patch content is too thin; supersede synthesis"
+specops supersede-synthesis run-001 --from .specops/runs/run-001/drafts/spec_delta_with_patch_items.json
+specops compile run-001 --accepted-only
+specops plan run-001
 specops apply run-001 --interactive
 specops audit
 ```

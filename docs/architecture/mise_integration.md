@@ -63,7 +63,11 @@ and returns JSON paths inside `/tmp/stage`.
 Because the installer may need to install the `specops` binary before it is on PATH, `install-skill.sh` should be a small shell wrapper that uses either:
 
 1. A prebuilt release asset vendored or downloaded by `mise-en-place` process, if available.
-2. A repo-local compiled binary in `dist/`, if the release package includes it.
-3. `go run ./cmd/specops install-skill ...` as a developer fallback when Go is available.
+2. A repo-local compiled binary next to the wrapper, if the release package includes it.
+3. `go run -ldflags "-X main.version=<resolved-version>" ./cmd/specops install-skill ...` as a developer fallback when Go is available.
 
 For public release packages, prefer option 2: GitHub Release archive contains the binary plus skill payloads and install wrapper.
+
+The wrapper must not delegate to a `specops` binary found on `PATH`; `mise-en-place`
+runs the wrapper from a resolved checkout, and PATH delegation can mix an older
+checkout with a newer local binary.

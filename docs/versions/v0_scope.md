@@ -24,6 +24,7 @@ last_reviewed: 2026-05-06
 - Static/manual backend for intake/refine/synthesize outputs.
 - Decision queue and human gate.
 - Compile/plan/apply canonical patch flow.
+- Pre-apply synthesis supersession when plan review finds incomplete semantic content.
 - Audit checks for repo taxonomy, front matter, ADR links, and v0 acceptance criteria.
 - Reproduction/eval framework with deterministic structural checks.
 - Release artifacts for macOS/Linux arm64/x86_64.

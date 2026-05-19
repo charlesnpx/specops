@@ -40,7 +40,7 @@ decisions:
   rejected: []
   deferred: []
 next:
-  command: specops harden <run-id>
+  command: specops harden <run-id> --from <file>
   reason: refined artifact can be challenged or synthesized
   stage: harden
   gate_kind: semantic
@@ -52,4 +52,6 @@ next:
 
 Commands can be repeated if idempotent. Non-idempotent commands must create new artifact versions.
 
-Semantic production commands (`refine`, `harden`, and `synthesize`) require a matching prompt artifact with `stage` metadata before they can write output artifacts or advance status.
+Semantic production commands (`refine`, `harden`, and `synthesize`) require a matching prompt artifact with `stage` metadata and an authored artifact passed with `--from` before they can write output artifacts or advance status.
+
+At `planned`, an operator may reject patch content quality before apply. `specops supersede-synthesis <run-id> --from <spec_delta.json>` requires an apply-stage note, archives the current synthesized delta and patch plan, writes a replacement current `outputs/spec_delta.json`, and returns to `decisions_accepted` by default. Passing `--reopen-decisions` returns to `awaiting_decisions` instead.

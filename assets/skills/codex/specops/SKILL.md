@@ -1,9 +1,9 @@
 ---
 name: specops
 description: Work with SpecOps specification repositories and the local specops CLI.
-specops_version: 0.1.2
-payload_version: 0.1.2
-compatible_cli_range: ">=0.1.2 <0.2.0"
+specops_version: 0.1.3-dev
+payload_version: 0.1.3-dev
+compatible_cli_range: ">=0.1.3-dev <0.2.0"
 ---
 
 # SpecOps
@@ -29,7 +29,11 @@ Use the CLI as the durable state machine and the skill as the conversational lay
 5. Treat the CLI's suggested_question_prompts as generic scaffolding. The CLI is not AI-enabled and does not generate the content-aware questions for you.
 6. A user answer of "continue" applies only to exactly the current semantic gate. It is not permission to cross any later semantic gate.
 7. After an answer batch, record the guidance with specops note <run-id> --stage <stage> --text <file-or-inline>.
-8. Run at most the one semantic command for the current stage. Use --from <file> with refine, harden, or synthesize when the semantic artifact was authored by the agent or operator.
-9. After every semantic command, refresh with specops context <run-id> before running anything else.
-10. If refreshed context reports another semantic gate, you MUST stop and ask that gate's questions before running any command.
-11. Never treat "continue" as permission to cross multiple semantic gates.
+8. For refine, harden, or synthesize, author the semantic artifact yourself as a draft run artifact, then run at most the one semantic command for the current stage with --from <file>. Never run these commands without --from.
+9. When authoring a synthesized spec_delta.json, put full canonical document bodies in patch_items[].content whenever deterministic generated docs would be too thin. Use patch_plan only for human-readable compile notes, and use affected_docs only for coverage.
+10. After every semantic command, refresh with specops context <run-id> before running anything else.
+11. If refreshed context reports another semantic gate, you MUST stop and ask that gate's questions before running any command.
+12. Never treat "continue" as permission to cross multiple semantic gates.
+13. A stage note records guidance and provenance; it is not semantic source material that the CLI will transform.
+14. At the apply gate, inspect the patch plan health. Treat stale (compile inputs changed) and incomplete (plan does not cover the accepted delta) as separate unsafe states. If either is true, rerun specops compile <run-id> --accepted-only before asking the operator whether to apply; compile is intentionally rerunnable from planned in 0.1.3-dev.
+15. If the apply-gate patch plan is mechanically healthy but semantically too thin, record an apply-stage note, author a replacement spec_delta.json with patch_items, run specops supersede-synthesis <run-id> --from <spec_delta.json>, refresh context, and recompile. Do not pass --reopen-decisions unless the operator explicitly wants settled decisions reopened.

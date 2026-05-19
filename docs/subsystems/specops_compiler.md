@@ -47,4 +47,5 @@ validation checklist
 
 - `compile` does not write canonical files.
 - `plan` shows exact file-level intent.
+- plan review may supersede synthesis before `apply` when accepted decisions are correct but generated content is too thin.
 - `apply` writes only accepted/approved patch plan items.

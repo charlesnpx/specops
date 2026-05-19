@@ -12,7 +12,7 @@ var transitions = map[Status][]Status{
 	StatusAwaitingDecisions: {StatusDecisionsAccepted},
 	StatusDecisionsAccepted: {StatusCompiled},
 	StatusCompiled:          {StatusPlanned},
-	StatusPlanned:           {StatusApplied},
+	StatusPlanned:           {StatusAwaitingDecisions, StatusDecisionsAccepted, StatusApplied},
 	StatusApplied:           {StatusAudited},
 	StatusAudited:           {StatusEvaluated},
 }
@@ -43,19 +43,19 @@ func NextForStatus(status Status, runID string) *NextAction {
 	case StatusIngested:
 		return mechanical("intake", "specops intake "+runID, "input is ready for intake", contextCommand)
 	case StatusIntakeComplete:
-		return semantic("refine", "specops refine "+runID, "intake artifact is ready to refine", contextCommand, noteCommand("refine"), []string{
+		return semantic("refine", "specops refine "+runID+" --from <file>", "intake artifact is ready to refine", contextCommand, noteCommand("refine"), []string{
 			"What should the refinement preserve from the source material?",
 			"What ambiguities or missing constraints should be called out before synthesis?",
 			"What would make the next artifact useful for review?",
 		})
 	case StatusRefined:
-		return semantic("harden", "specops harden "+runID, "refined artifact can be challenged or synthesized", contextCommand, noteCommand("harden"), []string{
+		return semantic("harden", "specops harden "+runID+" --from <file>", "refined artifact can be challenged or synthesized", contextCommand, noteCommand("harden"), []string{
 			"What assumptions in the refined notes need pressure-testing?",
 			"What failure modes or interface consequences should the hardening pass examine?",
 			"Is the refined artifact ready to synthesize, or should it be challenged first?",
 		})
 	case StatusHardened:
-		return semantic("synthesize", "specops synthesize "+runID, "hardened artifact can produce a spec delta", contextCommand, noteCommand("synthesize"), []string{
+		return semantic("synthesize", "specops synthesize "+runID+" --from <spec_delta.json>", "hardened artifact can produce a spec delta", contextCommand, noteCommand("synthesize"), []string{
 			"What decisions should be explicit before canonical docs can change?",
 			"Which docs are likely affected by the synthesized delta?",
 			"What acceptance criteria should gate the patch plan?",
@@ -74,7 +74,7 @@ func NextForStatus(status Status, runID string) *NextAction {
 		return semantic("apply", "specops apply "+runID, "reviewed plan can be applied", contextCommand, noteCommand("apply"), []string{
 			"Has the compiled patch plan been reviewed against the accepted decisions?",
 			"Should apply run as a dry run, interactive apply, or direct apply?",
-			"Are there local files that need checking before mutation?",
+			"Is the patch content complete, or should synthesis be superseded before apply?",
 		})
 	case StatusApplied:
 		return mechanical("audit", "specops audit", "applied changes should be audited", contextCommand)

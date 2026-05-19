@@ -34,7 +34,30 @@ acceptance_criteria: []
 open_questions: []
 risks: []
 patch_plan: []
+patch_items: []
 ```
+
+List fields in the Go `SpecDelta` struct are string lists unless otherwise noted. `affected_docs` is a list of relative doc paths, not objects.
+
+`patch_plan` is a human-readable string list. It is not document body content. `affected_docs` records coverage: which canonical docs the accepted delta should touch.
+
+`patch_items` is the optional exact file-level patch form used when the author wants compile to preserve canonical document content exactly:
+
+```yaml
+patch_items:
+  - action: create
+    path: docs/CANON.md
+    title: Create canonical frame
+    content: |
+      ---
+      id: canon
+      ...
+    decision_ids: [D001]
+```
+
+When `patch_items` is absent, compile may generate deterministic canonical doc patches for accepted `affected_docs` from the structured delta fields and accepted decisions.
+
+Agents should use `patch_items[].content` whenever the accepted delta requires rich authored canonical text, such as full concept models, invariants, required fields, or normative procedures. Deterministic generated docs are only a fallback for cases where skeletal structured content is sufficient.
 
 ## Decision linkage
 

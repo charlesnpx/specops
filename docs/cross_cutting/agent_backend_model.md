@@ -34,4 +34,4 @@ eval
 - Capture stdout/stderr/transcript paths.
 - Validate expected output artifacts.
 - Never assume backend success until artifacts validate.
-- Allow manual fallback.
+- Allow manual authoring of semantic artifacts that are passed to CLI transitions with `--from`.
