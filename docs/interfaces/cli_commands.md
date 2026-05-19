@@ -186,3 +186,7 @@ specops install-skill --uninstall --target all --json
 ```
 
 `install-skill.sh` may delegate to these commands.
+When run from a source checkout, the wrapper injects the exact resolved git tag
+version into `go run`. It must not call a `specops` executable from `PATH`,
+because delegated installs must report the version and payloads from the
+checkout that `mise-en-place` resolved.
